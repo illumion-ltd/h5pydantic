@@ -6,6 +6,8 @@ authors = ["Clinton Roy <clintonr@ansto.gov.au>"]
 license = "PSF"
 readme = "README.md"
 
+packages = [{include = "hdf5popo", from = "src"}]
+
 [tool.poetry.dependencies]
 python = "~3.9"
 
