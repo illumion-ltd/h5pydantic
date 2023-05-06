@@ -10,7 +10,12 @@ packages = [{include = "hdf5popo", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "~3.9"
+h5py = "^3.8.0"
+pydantic = "^1.10.7"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"
 
 [build-system]
 requires = ["poetry-core"]
