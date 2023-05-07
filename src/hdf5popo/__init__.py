@@ -11,12 +11,14 @@ class HDF5DataProduct(BaseModel):
 
 
     @classmethod
-    def load(filename: Path) -> tuple["HDF5", list[str]]:
+    def load(cls: BaseModel, filename: Path) -> tuple["HDF5", list[str]]:
         """Load a file into a HDF5 set of objects.
 
         Returns the object, plus a list of any unmapped keys.
         """
-        pass
+        with h5py.File(filename, "r") as f:
+            return cls.parse_obj(f)
+
 
     def dump(self, filename: Path):
         """Dumps the HDF5 object set into a file."""
@@ -26,10 +28,3 @@ class HDF5DataProduct(BaseModel):
             for key in self.__fields__:
                 group.attrs[key] = getattr(self, key)
 
-    def __setattr__(self, name, value):
-        if name not in self.__dict__:
-            raise NameError(f"HDF5 attribute '{name}' not defined for '{self.__class__}'")
-
-        # TODO check the type
-
-        self.name = value
