@@ -40,6 +40,7 @@ def test_missing_attribute(tmp_path):
     with pytest.raises(ValueError):
         dp.baz = "no such attribute"
 
+
 def test_empty_roundtrip(tmp_path):
     class EmptyHDF(H5Group):
         pass
@@ -50,9 +51,11 @@ def test_empty_roundtrip(tmp_path):
 
     empty_output.dump(hdf5_filename)
 
-    empty_input = EmptyHDF.load(hdf5_filename)
+    empty_input, unparsed = EmptyHDF.load(hdf5_filename)
 
     assert empty_output == empty_input
+    assert unparsed == []
+
 
 def test_nested(tmp_path):
     class Baseline(H5Group):
@@ -72,11 +75,33 @@ def test_nested(tmp_path):
 
     exp_out.dump(hdf5_filename)
 
-    exp_in = Experiment.load(hdf5_filename)
+    exp_in, unparsed = Experiment.load(hdf5_filename)
 
     assert exp_in == exp_out
-    
+    assert unparsed == []
+
+
+def test_enumerate(tmp_path):
+    class Reading(H5Group):
+        temp: float
+        humidity: float
+
+    class Experiment(H5Group):
+        readings: list[Reading]
+
+    hdf5_filename = tmp_path / "enumerate.hdf"
+
+    exp_out = Experiment(readings=[{"temp": 20.0, "humidity": 0.45},
+                                   {"temp": 30.0, "humidity": 0.5}])
+
+    exp_out.dump(hdf5_filename)
+
+    exp_in, unparsed = Experiment.load(hdf5_filename)
+
+    assert exp_in == exp_out
+    assert unparsed == []
 
 # TODO test an attribute not defined
 # TODO test setting a value of the wrong type
 # TODO hypothesis testing load <-> dump
+# TODO data set labels, check that len(lables) == len(shape)

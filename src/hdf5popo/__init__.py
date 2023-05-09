@@ -4,16 +4,34 @@ from pathlib import Path
 
 import h5py
 
+import types
+
 
 class H5Group(BaseModel):
-    """Maps from a HDF5 file to a set of Python classes."""
+    """A pydantic BaseModel describing a HDF5 Group."""
 
     @classmethod
     def _load(cls: BaseModel, h5file: h5py.File, prefix: Path):
         d = {}
         for key, field in cls.__fields__.items():
-            if issubclass(field.type_, H5Group):
+            if isinstance(field.outer_type_, types.GenericAlias):
+                # FIXME clearly I should not be looking at these attributes.
+                if not issubclass(field.outer_type_.__origin__, list):
+                    raise ValueError("H5Popo only handles list containers")
+
+                if not issubclass(field.type_, H5Group):
+                    raise ValueError("H5Popo only handles H5Groups as a container element")
+
+                d[key] = []
+                indexes = [int(i) for i in h5file[str(prefix / key)].keys()]
+                indexes.sort()
+                for i in indexes:
+                    # FIXME This doesn't check a lot of cases.
+                    d[key].insert(i, field.type_._load(h5file, prefix / key / str(i)))
+            elif issubclass(field.type_, H5Group):
                 d[key] = field.type_._load(h5file, prefix / key)
+            elif issubclass(field.type_, list):
+                pass
             else:
                 d[key] = h5file[str(prefix)].attrs[key]
 
@@ -31,10 +49,13 @@ class H5Group(BaseModel):
 
     def _dump(self, h5file: h5py.File, prefix: Path):
         group = h5file.require_group(str(prefix))
-        for key in self.__fields__:
+        for key, field in self.__fields__.items():
             value = getattr(self, key)
             if isinstance(value, H5Group):
                 value._dump(h5file, prefix / key)
+            elif isinstance(value, list):
+                for i, elem in enumerate(value):
+                    elem._dump(h5file, prefix / key / str(i))
             else:
                 group.attrs[key] = getattr(self, key)
 
