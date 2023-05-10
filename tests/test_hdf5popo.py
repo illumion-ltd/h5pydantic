@@ -1,4 +1,4 @@
-from hdf5popo import H5Group
+from h5pydantic import H5Group
 import h5py
 
 import pytest

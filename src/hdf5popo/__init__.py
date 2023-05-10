@@ -36,11 +36,11 @@ class H5Group(BaseModel):
             if isinstance(field.outer_type_, types.GenericAlias):
                 # FIXME clearly I should not be looking at these attributes.
                 if not issubclass(field.outer_type_.__origin__, list):
-                    raise ValueError("H5Popo only handles list containers")
+                    raise ValueError("h5pydantic only handles list containers")
 
                 if not issubclass(field.type_, H5Group):
                     # FIXME should definitely handle other things.
-                    raise ValueError("H5Popo only handles H5Groups as a container element")
+                    raise ValueError("h5pydantic only handles H5Groups as a container element")
 
                 d[key] = []
                 indexes = [int(i) for i in h5file[str(prefix / key)].keys()]

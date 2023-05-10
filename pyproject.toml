@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "hdf5popo"
+name = "h5pydantic"
 version = "0.1.0"
 description = "Maps between Plain old Python Objects and hdf5"
 authors = ["Clinton Roy <clintonr@ansto.gov.au>"]
 license = "PSF"
 readme = "README.md"
 
-packages = [{include = "hdf5popo", from = "src"}]
+packages = [{include = "h5pydantic", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "~3.9"
