@@ -7,8 +7,27 @@ import h5py
 import types
 
 
+class H5DataSet(BaseModel, h5py.Dataset):
+    """A pydantic Basemodel specifying a HDF5 Dataset."""
+    # FIXME can a dataset be the root model? if so, refactor load/dump.
+    # FIXME refactor _load/_dump apis
+    # There are a *lot* of dataset features to be supported as optional flags
+
+    #shape: tuple[int]
+    #dtype: str = "f"
+
+    def _dump(self, h5file: h5py.File, prefix: Path) -> None:
+        dataset = h5file[prefix].require_dataset(self.name, self.shape, self.dtype)
+        # FIXME actually write the data, not sure what to do here.
+        dataset[:] = self.data
+
+    @classmethod
+    def _load(cls: BaseModel, filename: Path) -> tuple["H5Group", list[str]]:
+        return cls.parse_obj(d)
+
+
 class H5Group(BaseModel):
-    """A pydantic BaseModel describing a HDF5 Group."""
+    """A pydantic BaseModel specifying a HDF5 Group."""
 
     @classmethod
     def _load(cls: BaseModel, h5file: h5py.File, prefix: Path):
@@ -20,6 +39,7 @@ class H5Group(BaseModel):
                     raise ValueError("H5Popo only handles list containers")
 
                 if not issubclass(field.type_, H5Group):
+                    # FIXME should definitely handle other things.
                     raise ValueError("H5Popo only handles H5Groups as a container element")
 
                 d[key] = []
@@ -47,7 +67,7 @@ class H5Group(BaseModel):
             # TODO actually build up the list of unparsed keys
             return cls._load(h5file, Path("/")), []
 
-    def _dump(self, h5file: h5py.File, prefix: Path):
+    def _dump(self, h5file: h5py.File, prefix: Path) -> None:
         group = h5file.require_group(str(prefix))
         for key, field in self.__fields__.items():
             value = getattr(self, key)
@@ -63,3 +83,4 @@ class H5Group(BaseModel):
         """Dump the H5Group object tree into a file."""
         with h5py.File(filename, "w") as h5file:
             self._dump(h5file, Path("/"))
+
