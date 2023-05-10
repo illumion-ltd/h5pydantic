@@ -48,8 +48,9 @@ class H5Dataset(_AbstractH5Base, BaseModel):
 
     @classmethod
     def _load(cls: BaseModel, h5file: h5py.File, prefix: Path) -> tuple["H5Group", list[str]]:
-        # FIXME should be getting the shape and dtype from the hd5 file somehow
-        d = {"shape": (3, 3), "dtype": "int32", "data": h5file[str(prefix)]}
+        # Really should be verifying all of the details match the class.
+        data = h5file[str(prefix)]
+        d = {"shape": data.shape, "dtype": data.dtype, "data": data}
         return cls.parse_obj(d)
 
 
