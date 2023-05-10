@@ -1,5 +1,7 @@
-from h5pydantic import H5Group
+from h5pydantic import H5Group, H5Dataset
 import h5py
+
+import numpy as np
 
 import pytest
 
@@ -71,8 +73,6 @@ def test_nested(tmp_path):
     exp_out = Experiment(before=Baseline(temp1=10.0, temp2=11.0),
                          after=Baseline(temp1=21.0, temp2=22.0))
 
-    print("exp_out", exp_out)
-
     exp_out.dump(hdf5_filename)
 
     exp_in, unparsed = Experiment.load(hdf5_filename)
@@ -93,6 +93,28 @@ def test_enumerate(tmp_path):
 
     exp_out = Experiment(readings=[{"temp": 20.0, "humidity": 0.45},
                                    {"temp": 30.0, "humidity": 0.5}])
+
+    exp_out.dump(hdf5_filename)
+
+    exp_in, unparsed = Experiment.load(hdf5_filename)
+
+    assert exp_in == exp_out
+    assert unparsed == []
+
+
+def test_dataset(tmp_path):
+    class AreaDetectorImage(H5Dataset):
+        _shape = (3, 5)
+        _dtype = "int32"
+
+    class Experiment(H5Group):
+        image = AreaDetectorImage()
+
+    hdf5_filename = tmp_path / "test.hdf"
+
+    exp_out = Experiment()
+
+    exp_out.image._data = np.zeros((3,5), dtype="int32")
 
     exp_out.dump(hdf5_filename)
 

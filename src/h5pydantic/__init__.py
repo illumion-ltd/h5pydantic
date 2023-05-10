@@ -1,32 +1,59 @@
+import h5py
 from pydantic import BaseModel
+import numpy
+
 
 from pathlib import Path
-
-import h5py
-
 import types
 
 
-class H5DataSet(BaseModel, h5py.Dataset):
-    """A pydantic Basemodel specifying a HDF5 Dataset."""
-    # FIXME can a dataset be the root model? if so, refactor load/dump.
-    # FIXME refactor _load/_dump apis
-    # There are a *lot* of dataset features to be supported as optional flags
+# FIXME use posixpath instead of path
 
-    #shape: tuple[int]
-    #dtype: str = "f"
+
+class _AbstractH5Base:
+    """An implementation detail, to share the _load and _dump API."""
 
     def _dump(self, h5file: h5py.File, prefix: Path) -> None:
-        dataset = h5file[prefix].require_dataset(self.name, self.shape, self.dtype)
-        # FIXME actually write the data, not sure what to do here.
-        dataset[:] = self.data
+        pass
 
     @classmethod
-    def _load(cls: BaseModel, filename: Path) -> tuple["H5Group", list[str]]:
+    def _load(cls: BaseModel, h5file: h5py.File, prefix: Path) -> tuple["H5Group", list[str]]:
+        pass
+
+
+class H5Dataset(_AbstractH5Base, BaseModel):
+    """A pydantic Basemodel specifying a HDF5 Dataset."""
+
+    class Config:
+        # Allows numpy.ndarray (which doesn't have a validator).
+        arbitrary_types_allowed = True
+
+        # Allows us to use field names starting with underscore
+        underscore_attrs_are_private = True
+
+    # FIXME can a dataset be the root model? if so, refactor load/dump.
+    # FIXME refactor _load/_dump apis
+    # There are a *lot* of dataset features to be supported as optional flags, compression, chunking etc.
+    # FIXME test for attributes on datasets
+    # FIXME I'm not comfortable with shadowing these fields like this, but it's nice to have some ns to put config variables in.
+    _shape: tuple[int]
+    _dtype: str = "f"
+    _data: numpy.ndarray = None
+
+    def _dump(self, h5file: h5py.File, prefix: Path) -> None:
+        # FIXME check that the shape of data matches
+        # FIXME add in all the other flags
+        dataset = h5file.require_dataset(str(prefix), shape=self._shape, dtype=self._dtype)
+        dataset[:] = self._data
+
+    @classmethod
+    def _load(cls: BaseModel, h5file: h5py.File, prefix: Path) -> tuple["H5Group", list[str]]:
+        # FIXME should be getting the shape and dtype from the hd5 file somehow
+        d = {"shape": (3, 3), "dtype": "int32", "data": h5file[str(prefix)]}
         return cls.parse_obj(d)
 
 
-class H5Group(BaseModel):
+class H5Group(_AbstractH5Base, BaseModel):
     """A pydantic BaseModel specifying a HDF5 Group."""
 
     @classmethod
@@ -48,7 +75,7 @@ class H5Group(BaseModel):
                 for i in indexes:
                     # FIXME This doesn't check a lot of cases.
                     d[key].insert(i, field.type_._load(h5file, prefix / key / str(i)))
-            elif issubclass(field.type_, H5Group):
+            elif issubclass(field.type_, _AbstractH5Base):
                 d[key] = field.type_._load(h5file, prefix / key)
             elif issubclass(field.type_, list):
                 pass
@@ -71,7 +98,7 @@ class H5Group(BaseModel):
         group = h5file.require_group(str(prefix))
         for key, field in self.__fields__.items():
             value = getattr(self, key)
-            if isinstance(value, H5Group):
+            if isinstance(value, _AbstractH5Base):
                 value._dump(h5file, prefix / key)
             elif isinstance(value, list):
                 for i, elem in enumerate(value):
