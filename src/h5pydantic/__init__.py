@@ -3,21 +3,18 @@ from pydantic import BaseModel
 import numpy
 
 
-from pathlib import Path
+from pathlib import PurePosixPath
 import types
-
-
-# FIXME use posixpath instead of path
 
 
 class _AbstractH5Base:
     """An implementation detail, to share the _load and _dump API."""
 
-    def _dump(self, h5file: h5py.File, prefix: Path) -> None:
+    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
         pass
 
     @classmethod
-    def _load(cls: BaseModel, h5file: h5py.File, prefix: Path) -> tuple["H5Group", list[str]]:
+    def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath) -> tuple["H5Group", list[str]]:
         pass
 
 
@@ -40,14 +37,14 @@ class H5Dataset(_AbstractH5Base, BaseModel):
     _dtype: str = "f"
     _data: numpy.ndarray = None
 
-    def _dump(self, h5file: h5py.File, prefix: Path) -> None:
+    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
         dataset = h5file.require_dataset(str(prefix), shape=self._shape, dtype=self._dtype)
         dataset[:] = self._data
 
     @classmethod
-    def _load(cls: BaseModel, h5file: h5py.File, prefix: Path) -> tuple["H5Group", list[str]]:
+    def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath) -> tuple["H5Group", list[str]]:
         # Really should be verifying all of the details match the class.
         data = h5file[str(prefix)]
         d = {"shape": data.shape, "dtype": data.dtype, "data": data}
@@ -58,7 +55,7 @@ class H5Group(_AbstractH5Base, BaseModel):
     """A pydantic BaseModel specifying a HDF5 Group."""
 
     @classmethod
-    def _load(cls: BaseModel, h5file: h5py.File, prefix: Path):
+    def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath):
         d = {}
         for key, field in cls.__fields__.items():
             if isinstance(field.outer_type_, types.GenericAlias):
@@ -86,16 +83,16 @@ class H5Group(_AbstractH5Base, BaseModel):
         return cls.parse_obj(d)
 
     @classmethod
-    def load(cls: BaseModel, filename: Path) -> tuple["H5Group", list[str]]:
+    def load(cls: BaseModel, filename: PurePosixPath) -> tuple["H5Group", list[str]]:
         """Load a file into a tree of H5Group models.
 
         Returns the object, plus a list of any unmapped keys.
         """
         with h5py.File(filename, "r") as h5file:
             # TODO actually build up the list of unparsed keys
-            return cls._load(h5file, Path("/")), []
+            return cls._load(h5file, PurePosixPath("/")), []
 
-    def _dump(self, h5file: h5py.File, prefix: Path) -> None:
+    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
         group = h5file.require_group(str(prefix))
         for key, field in self.__fields__.items():
             value = getattr(self, key)
@@ -107,8 +104,8 @@ class H5Group(_AbstractH5Base, BaseModel):
             else:
                 group.attrs[key] = getattr(self, key)
 
-    def dump(self, filename: Path):
+    def dump(self, filename: PurePosixPath):
         """Dump the H5Group object tree into a file."""
         with h5py.File(filename, "w") as h5file:
-            self._dump(h5file, Path("/"))
+            self._dump(h5file, PurePosixPath("/"))
 
