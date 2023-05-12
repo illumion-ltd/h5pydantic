@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import numpy
 
 
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 import types
 
 
@@ -27,6 +27,7 @@ class H5Dataset(_AbstractH5Base, BaseModel):
 
         # Allows us to use field names starting with underscore
         underscore_attrs_are_private = True
+    # FIXME check that all underscore attributes are special attributes
 
     # FIXME can a dataset be the root model? if so, refactor load/dump.
     # FIXME refactor _load/_dump apis
@@ -54,6 +55,8 @@ class H5Dataset(_AbstractH5Base, BaseModel):
 
 class H5Group(_AbstractH5Base, BaseModel):
     """A pydantic BaseModel specifying a HDF5 Group."""
+
+    # Check for attributes that start with underscore
 
     @classmethod
     def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath):
@@ -84,7 +87,7 @@ class H5Group(_AbstractH5Base, BaseModel):
         return cls.parse_obj(d)
 
     @classmethod
-    def load(cls: BaseModel, filename: PurePosixPath) -> tuple["H5Group", list[str]]:
+    def load(cls: BaseModel, filename: Path) -> tuple["H5Group", list[str]]:
         """Load a file into a tree of H5Group models.
 
         Returns the object, plus a list of any unmapped keys.
@@ -105,7 +108,7 @@ class H5Group(_AbstractH5Base, BaseModel):
             else:
                 group.attrs[key] = getattr(self, key)
 
-    def dump(self, filename: PurePosixPath):
+    def dump(self, filename: Path):
         """Dump the H5Group object tree into a file."""
         with h5py.File(filename, "w") as h5file:
             self._dump(h5file, PurePosixPath("/"))
