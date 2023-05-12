@@ -12,7 +12,7 @@ The motivational case for h5pydantic was a Synchrotron use case, so
 this tutorial will use a greatly simplified Synchrotron use case.
 
 Specifying the Model
-====================
+--------------------
 
 
 
@@ -67,7 +67,7 @@ We now have all the bits and pieces to create our entire experiment:
 which introduces our first container type a list of Acquisitions.
 
 Using the Model
-===============
+---------------
 
 Now, lets use the model. In a real experiment the data would come from
 your beamline, for this example we'll just use example values.
