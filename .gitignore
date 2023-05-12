@@ -1,4 +1,4 @@
 dist
-docs/_build
+docs/_build/
 __pycache__
 poetry.lock
