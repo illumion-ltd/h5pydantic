@@ -32,7 +32,8 @@ class H5Dataset(_AbstractH5Base, BaseModel):
     # FIXME refactor _load/_dump apis
     # There are a *lot* of dataset features to be supported as optional flags, compression, chunking etc.
     # FIXME test for attributes on datasets
-    # FIXME I'm not comfortable with shadowing these fields like this, but it's nice to have some ns to put config variables in.
+    # FIXME I'm not comfortable with shadowing these fields like this,
+    # but it's nice to have some ns to put config variables in.
     _shape: tuple[int]
     _dtype: str = "f"
     _data: numpy.ndarray = None
