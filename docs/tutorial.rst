@@ -6,7 +6,7 @@ but it should be able to help people get started. This tutorial
 assumes some fundamental knowledge about Python.
 
 A convention to follow is to create your h5pydantic models in a
-"models.py" file.
+"model.py" file.
 
 The motivational case for h5pydantic was a Synchrotron use case, so
 this tutorial will use a greatly simplified Synchrotron use case.
@@ -74,7 +74,7 @@ your beamline, for this example we'll just use example values.
 
 .. code-block:: python
 
-  from model import 
+  from model import Experiment
 
   experiment = Experiment(metadata.start = {"temperature" : 25.0, "humidity": 0.4},
                           metadata.end = {"temperature": 26.0, "humidity": 0.4},
