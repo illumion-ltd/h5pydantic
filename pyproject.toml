@@ -18,6 +18,7 @@ ruff = "^0.0.265"
 
 [tool.poetry.group.doc.dependencies]
 sphinx = "^7.0.0"
+sphinx-autodoc-typehints = "^1.23.0"
 
 [tool.ruff]
 line-length = 120

@@ -90,7 +90,11 @@ class H5Group(_AbstractH5Base, BaseModel):
     def load(cls: BaseModel, filename: Path) -> tuple["H5Group", list[str]]:
         """Load a file into a tree of H5Group models.
 
-        Returns the object, plus a list of any unmapped keys.
+        Args:
+            filename: Path of HDF5 to load.
+
+        Returns:
+            A tuple, the first object being the parsed H5Group model, the second being a list of unparsed keys.
         """
         with h5py.File(filename, "r") as h5file:
             # TODO actually build up the list of unparsed keys
@@ -109,7 +113,13 @@ class H5Group(_AbstractH5Base, BaseModel):
                 group.attrs[key] = getattr(self, key)
 
     def dump(self, filename: Path):
-        """Dump the H5Group object tree into a file."""
+        """Dump the H5Group object tree into a file.
+
+        Args:
+            filename: Path to dump the the HDF5Group to.
+
+        Returns: None
+"""
         with h5py.File(filename, "w") as h5file:
             self._dump(h5file, PurePosixPath("/"))
 

@@ -11,6 +11,7 @@ Welcome to h5pydantic's documentation!
    :caption: Contents:
 
    tutorial
+   reference
    roadmap
 
 Design:
