@@ -1,12 +1,21 @@
 [tool.poetry]
 name = "h5pydantic"
-version = "0.1.0"
-description = "Maps between Plain old Python Objects and hdf5"
+version = "0.2.0"
+description = "Pydantic models for HDF5 files."
 authors = ["Clinton Roy <clinton.roy@gmail.com>"]
-license = "PSF-2.0"
+license = "License :: OSI Approved :: Python Software Foundation License"
 readme = "README.md"
+repository = "https://gitlab.com/clinton.roy/h5pydantic"
+documentation = "https://h5pydantic.readthedocs.io/"
 packages = [{include = "h5pydantic", from = "src"}]
-
+classifiers = [
+	    "Development Status :: 3 - Alpha",
+	    "Framework :: Pydantic",
+            "Natural Language :: English",
+	    "Topic :: File Formats",
+            "Topic :: Scientific/Engineering :: Information Analysis",
+            "Intended Audience :: Science/Research",
+]
 [tool.poetry.dependencies]
 python = "~3.9"
 h5py = "^3.8.0"
