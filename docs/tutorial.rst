@@ -54,7 +54,6 @@ Using the Model
 Now, lets use the model. In a real experiment the data would come from
 your beamline, for this example we'll just use example values.
 
-
 .. literalinclude:: src/dump.py
   :end-before: dump
 
