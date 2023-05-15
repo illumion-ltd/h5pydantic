@@ -14,8 +14,6 @@ this tutorial will use a greatly simplified Synchrotron use case.
 Specifying the Model
 --------------------
 
-
-
 To get started, import H5Dataset and H5Group from h5pydantic:
 
 .. literalinclude:: src/model.py
