@@ -18,38 +18,25 @@ Specifying the Model
 
 To get started, import H5Dataset and H5Group from h5pydantic:
 
-.. code-block:: python
-
-  from h5pydantic import H5Dataset, H5Group
-
+.. literalinclude:: src/model.py
+  :end-before: class
 
 Now, lets define a baseline measurement of our beamline:
 
-.. code-block:: python
-
-  class Baseline(H5Group):
-      temperature: float
-      humidity: float
+.. literalinclude:: src/model.py
+  :pyobject: Baseline
 
 Attributes of atomic types are stored as HDF5 attributes.
 
 Next, lets have two baseline measurements:
 
-.. code-block:: python
-
-  class Metadata(H5Group):
-      start: Baseline
-      end: baseline
-
+.. literalinclude:: src/model.py
+  :pyobject: Metadata
 
 Now, lets take some experimental measurements:
 
-.. code-block:: python
-
-  class Acquisition(H5Dataset):
-      _shape = (1024, 1024)
-      _dtype = "int32"
-      beamstop: int
+.. literalinclude:: src/model.py
+  :pyobject: Acquisition
 
 H5Datasets map directly to HDF5 datasets, which can have a lot of
 options, h5pydantic supports these through attributes that start with
@@ -58,13 +45,10 @@ acquisition.
 
 We now have all the bits and pieces to create our entire experiment:
 
-.. code-block:: python
+.. literalinclude:: src/model.py
+  :pyobject: Experiment
 
-  class Experiment(H5Group):
-      metadata: Metadata
-      data: list[Acquisition]
-
-which introduces our first container type a list of Acquisitions.
+which introduces our first container type, a list of Acquisitions.
 
 Using the Model
 ---------------
@@ -72,24 +56,17 @@ Using the Model
 Now, lets use the model. In a real experiment the data would come from
 your beamline, for this example we'll just use example values.
 
-.. code-block:: python
 
-  from model import Experiment
-
-  experiment = Experiment(metadata.start = {"temperature" : 25.0, "humidity": 0.4},
-                          metadata.end = {"temperature": 26.0, "humidity": 0.4},
-                          data = [{_data = numpy.array.randint(255), beamstop=10},
-                                  {_data = numpy.array.randint(255), beamstop=11},
-		                  {_data = numpy.array.randint(255), beamstop=12}])
+.. literalinclude:: src/dump.py
+  :end-before: dump
 
 Note the use of the _data attribute, which we use to set the data of our detector,
 here we're using random arrays.
 
 Now, we're ready to save this experiment to a file, using the Python convention of calling this :ref: dump()
 
-.. code-block:: python
-
-  experiment.dump(Path("experiment.hdf"))
+.. literalinclude:: src/dump.py
+  :start-at: experiment.dump
 
 Our example experiment will have a HDF5 file layout as follows::
 
@@ -106,15 +83,4 @@ Our example experiment will have a HDF5 file layout as follows::
 
 Now, when it comes to analysis, we want to load up the HDF5 file from disk:
 
-.. code-block:: python
-
-  from model import Experiment
-  from pathlib import Path
-
-  experiment = Experiment.load(Path("experiment.hdf"))
-
-  data1 = experiment.data[1]._data
-  starting_temp = experiment.metadata.start.temperature
-
-
-
+.. literalinclude:: src/load.py
