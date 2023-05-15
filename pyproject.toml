@@ -27,8 +27,9 @@ ruff = "^0.0.265"
 hypothesis = "^6.75.2"
 
 [tool.poetry.group.doc.dependencies]
-sphinx = "^7.0.0"
 sphinx-autodoc-typehints = "^1.23.0"
+sphinx-rtd-theme = "^1.2.0"
+sphinx = "6.2.1"
 
 [tool.ruff]
 line-length = 120
