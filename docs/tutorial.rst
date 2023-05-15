@@ -37,7 +37,7 @@ Now, lets take some experimental measurements:
   :pyobject: Acquisition
 
 H5Datasets map directly to HDF5 datasets, which can have a lot of
-options, h5pydantic supports these through attributes that start with
+options, h5pydantic supports these through attributes that end with
 underscores. We've added a per acquisition metadata "beamstop" to the
 acquisition. 
 
@@ -65,18 +65,10 @@ Now, we're ready to save this experiment to a file, using the Python convention 
 .. literalinclude:: src/dump.py
   :start-at: experiment.dump
 
-Our example experiment will have a HDF5 file layout as follows::
+Our example experiment hdf file is now created, an ascii form of it is
+as follows (the output of a call to h5dump):
 
-  /metadata/start/temperature
-  /metadata/start/humidity
-  /metadata/end/temperature
-  /metadata/end/humidity
-  /data/0/[dataset]
-  /data/0/beamstop
-  /data/1/[dataset]
-  /data/1/beamstop
-  /data/2/[dataset]
-  /data/2/beamstop
+.. literalinclude:: src/experiment.txt
 
 Now, when it comes to analysis, we want to load up the HDF5 file from disk:
 

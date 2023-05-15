@@ -1,0 +1,88 @@
+HDF5 "experiment.hdf" {
+GROUP "/" {
+   GROUP "data" {
+      DATASET "0" {
+         DATATYPE  H5T_STD_I32LE
+         DATASPACE  SIMPLE { ( 3, 5 ) / ( 3, 5 ) }
+         DATA {
+         (0,0): 15, 165, 135, 28, 101,
+         (1,0): 101, 196, 235, 4, 210,
+         (2,0): 30, 63, 147, 2, 86
+         }
+         ATTRIBUTE "beamstop" {
+            DATATYPE  H5T_STD_I64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 10
+            }
+         }
+      }
+      DATASET "1" {
+         DATATYPE  H5T_STD_I32LE
+         DATASPACE  SIMPLE { ( 3, 5 ) / ( 3, 5 ) }
+         DATA {
+         (0,0): 55, 172, 57, 217, 40,
+         (1,0): 149, 91, 221, 84, 212,
+         (2,0): 234, 171, 91, 234, 81
+         }
+         ATTRIBUTE "beamstop" {
+            DATATYPE  H5T_STD_I64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 11
+            }
+         }
+      }
+      DATASET "2" {
+         DATATYPE  H5T_STD_I32LE
+         DATASPACE  SIMPLE { ( 3, 5 ) / ( 3, 5 ) }
+         DATA {
+         (0,0): 208, 22, 218, 143, 2,
+         (1,0): 1, 162, 118, 133, 122,
+         (2,0): 36, 118, 95, 114, 42
+         }
+         ATTRIBUTE "beamstop" {
+            DATATYPE  H5T_STD_I64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 12
+            }
+         }
+      }
+   }
+   GROUP "metadata" {
+      GROUP "end" {
+         ATTRIBUTE "humidity" {
+            DATATYPE  H5T_IEEE_F64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 0.4
+            }
+         }
+         ATTRIBUTE "temperature" {
+            DATATYPE  H5T_IEEE_F64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 26
+            }
+         }
+      }
+      GROUP "start" {
+         ATTRIBUTE "humidity" {
+            DATATYPE  H5T_IEEE_F64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 0.4
+            }
+         }
+         ATTRIBUTE "temperature" {
+            DATATYPE  H5T_IEEE_F64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 25
+            }
+         }
+      }
+   }
+}
+}
