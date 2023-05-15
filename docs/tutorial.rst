@@ -60,7 +60,7 @@ We now have all the bits and pieces to create our entire experiment:
 
 .. code-block:: python
 
-  class Experiment:
+  class Experiment(H5Group):
       metadata: Metadata
       data: list[Acquisition]
 
