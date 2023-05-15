@@ -6,12 +6,32 @@ import numpy
 from pathlib import Path, PurePosixPath
 import types
 
+from typing import Union
+
 
 class _AbstractH5Base:
     """An implementation detail, to share the _load and _dump API."""
 
-    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
+    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> Union[h5py.Group, h5py.Dataset]:
         pass
+
+    def _dump_children(self, container, h5file: h5py.File, prefix: PurePosixPath):
+        for key, field in self.__fields__.items():
+            # FIXME I think I should be explicitly testing these keys against a known list, at init time though.
+            if key.endswith("_"):
+                continue
+            value = getattr(self, key)
+            if isinstance(value, _AbstractH5Base):
+                value._dump(h5file, prefix / key)
+            elif isinstance(value, list):
+                for i, elem in enumerate(value):
+                    elem._dump(h5file, prefix / key / str(i))
+            else:
+                container.attrs[key] = getattr(self, key)
+
+    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
+        container = self._dump_container(h5file, prefix)
+        self._dump_children(container, h5file, prefix)
 
     @classmethod
     def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath) -> tuple["H5Group", list[str]]:
@@ -29,21 +49,23 @@ class H5Dataset(_AbstractH5Base, BaseModel):
         underscore_attrs_are_private = True
     # FIXME check that all underscore attributes are special attributes
 
-    # FIXME can a dataset be the root model? if so, refactor load/dump.
     # FIXME refactor _load/_dump apis
     # There are a *lot* of dataset features to be supported as optional flags, compression, chunking etc.
     # FIXME test for attributes on datasets
     # FIXME I'm not comfortable with shadowing these fields like this,
     # but it's nice to have some ns to put config variables in.
-    _shape: tuple[int]
-    _dtype: str = "f"
-    _data: numpy.ndarray = None
+    shape_: tuple[int]
+    dtype_: str = "f"
 
-    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
+    # FIXME is it possible to initialise this after we've got shape_ and dtype_ in the instance?
+    data_: numpy.ndarray = None
+
+    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
-        dataset = h5file.require_dataset(str(prefix), shape=self._shape, dtype=self._dtype)
-        dataset[:] = self._data
+        dataset = h5file.require_dataset(str(prefix), shape=self.shape_, dtype=self.dtype_)
+        dataset[:] = self.data_
+        return dataset
 
     @classmethod
     def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath) -> tuple["H5Group", list[str]]:
@@ -100,17 +122,8 @@ class H5Group(_AbstractH5Base, BaseModel):
             # TODO actually build up the list of unparsed keys
             return cls._load(h5file, PurePosixPath("/")), []
 
-    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
-        group = h5file.require_group(str(prefix))
-        for key, field in self.__fields__.items():
-            value = getattr(self, key)
-            if isinstance(value, _AbstractH5Base):
-                value._dump(h5file, prefix / key)
-            elif isinstance(value, list):
-                for i, elem in enumerate(value):
-                    elem._dump(h5file, prefix / key / str(i))
-            else:
-                group.attrs[key] = getattr(self, key)
+    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Group:
+        return h5file.require_group(str(prefix))
 
     def dump(self, filename: Path):
         """Dump the H5Group object tree into a file.
