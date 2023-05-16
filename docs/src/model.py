@@ -12,7 +12,7 @@ class Metadata(H5Group):
 
 
 class Acquisition(H5Dataset):
-    shape_: tuple[int] = (3, 5)
+    shape_: tuple[int, ...] = (3, 5)
     dtype_: str = "int32"
     beamstop: int = None
 
