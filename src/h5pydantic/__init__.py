@@ -2,26 +2,28 @@ import h5py
 from pydantic import BaseModel
 import numpy
 
-
+from abc import ABC
 from pathlib import Path, PurePosixPath
 import types
 
 from typing import Union
 
+_H5Container = Union[h5py.Group, h5py.Dataset]
 
-class _AbstractH5Base:
-    """An implementation detail, to share the _load and _dump API."""
 
-    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> Union[h5py.Group, h5py.Dataset]:
+class _H5Base(ABC):
+    """An implementation detail, to share the _load and _dump APIs."""
+
+    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
         pass
 
-    def _dump_children(self, container, h5file: h5py.File, prefix: PurePosixPath):
+    def _dump_children(self, container: _H5Container, h5file: h5py.File, prefix: PurePosixPath):
         for key, field in self.__fields__.items():
             # FIXME I think I should be explicitly testing these keys against a known list, at init time though.
             if key.endswith("_"):
                 continue
             value = getattr(self, key)
-            if isinstance(value, _AbstractH5Base):
+            if isinstance(value, _H5Base):
                 value._dump(h5file, prefix / key)
             elif isinstance(value, list):
                 for i, elem in enumerate(value):
@@ -34,11 +36,44 @@ class _AbstractH5Base:
         self._dump_children(container, h5file, prefix)
 
     @classmethod
-    def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath) -> tuple["H5Group", list[str]]:
-        pass
+    def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
+        return {}
+
+    @classmethod
+    def _load_children(cls, h5file: h5py.File, prefix: PurePosixPath):
+        d = {}
+        for key, field in cls.__fields__.items():
+            if key.endswith("_"):
+                continue
+
+            if isinstance(field.outer_type_, types.GenericAlias):
+                # FIXME clearly I should not be looking at these attributes.
+                if not issubclass(field.outer_type_.__origin__, list):
+                    raise ValueError(f"h5pydantic only handles list containers, not '{field.outer_type_.__origin__}'")
+
+                d[key] = []
+                indexes = [int(i) for i in h5file[str(prefix / key)].keys()]
+                indexes.sort()
+                for i in indexes:
+                    # FIXME This doesn't check a lot of cases.
+                    d[key].insert(i, field.type_._load(h5file, prefix / key / str(i)))
+            elif issubclass(field.type_, _H5Base):
+                d[key] = field.type_._load(h5file, prefix / key)
+            elif issubclass(field.type_, list):
+                pass
+            else:
+                d[key] = h5file[str(prefix)].attrs[key]
+
+        return d
+
+    @classmethod
+    def _load(cls, h5file: h5py.File, prefix: PurePosixPath) -> tuple["H5Group", list[str]]:
+        d = cls._load_intrinsic(h5file, prefix)
+        d.update(cls._load_children(h5file, prefix))
+        return cls.parse_obj(d)
 
 
-class H5Dataset(_AbstractH5Base, BaseModel):
+class H5Dataset(_H5Base, BaseModel):
     """A pydantic Basemodel specifying a HDF5 Dataset."""
 
     class Config:
@@ -54,11 +89,11 @@ class H5Dataset(_AbstractH5Base, BaseModel):
     # FIXME test for attributes on datasets
     # FIXME I'm not comfortable with shadowing these fields like this,
     # but it's nice to have some ns to put config variables in.
-    shape_: tuple[int]
+    shape_: tuple[int, ...]
     dtype_: str = "f"
 
     # FIXME is it possible to initialise this after we've got shape_ and dtype_ in the instance?
-    data_: numpy.ndarray = None
+    data_: h5py.Dataset = None
 
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
         # FIXME check that the shape of data matches
@@ -68,45 +103,19 @@ class H5Dataset(_AbstractH5Base, BaseModel):
         return dataset
 
     @classmethod
-    def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath) -> tuple["H5Group", list[str]]:
+    def _load_intrinsic(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath):
         # Really should be verifying all of the details match the class.
         data = h5file[str(prefix)]
-        d = {"shape": data.shape, "dtype": data.dtype, "data": data}
-        return cls.parse_obj(d)
+        return {"shape_": data.shape, "dtype_": str(data.dtype), "data_": data}
 
 
-class H5Group(_AbstractH5Base, BaseModel):
+class H5Group(_H5Base, BaseModel):
     """A pydantic BaseModel specifying a HDF5 Group."""
 
-    # Check for attributes that start with underscore
-
     @classmethod
-    def _load(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath):
-        d = {}
-        for key, field in cls.__fields__.items():
-            if isinstance(field.outer_type_, types.GenericAlias):
-                # FIXME clearly I should not be looking at these attributes.
-                if not issubclass(field.outer_type_.__origin__, list):
-                    raise ValueError("h5pydantic only handles list containers")
-
-                if not issubclass(field.type_, H5Group):
-                    # FIXME should definitely handle other things.
-                    raise ValueError("h5pydantic only handles H5Groups as a container element")
-
-                d[key] = []
-                indexes = [int(i) for i in h5file[str(prefix / key)].keys()]
-                indexes.sort()
-                for i in indexes:
-                    # FIXME This doesn't check a lot of cases.
-                    d[key].insert(i, field.type_._load(h5file, prefix / key / str(i)))
-            elif issubclass(field.type_, _AbstractH5Base):
-                d[key] = field.type_._load(h5file, prefix / key)
-            elif issubclass(field.type_, list):
-                pass
-            else:
-                d[key] = h5file[str(prefix)].attrs[key]
-
-        return cls.parse_obj(d)
+    def _load_container(cls, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
+        group = h5file[str(prefix)]
+        return group
 
     @classmethod
     def load(cls: BaseModel, filename: Path) -> tuple["H5Group", list[str]]:
