@@ -80,8 +80,6 @@ class H5Dataset(_H5Base, BaseModel):
         # Allows numpy.ndarray (which doesn't have a validator).
         arbitrary_types_allowed = True
 
-        # Allows us to use field names starting with underscore
-        underscore_attrs_are_private = True
     # FIXME check that all underscore attributes are special attributes
 
     # FIXME refactor _load/_dump apis
@@ -112,24 +110,42 @@ class H5Dataset(_H5Base, BaseModel):
 class H5Group(_H5Base, BaseModel):
     """A pydantic BaseModel specifying a HDF5 Group."""
 
+    class Config:
+        # For the _h5file attribute.
+        underscore_attrs_are_private = True
+
+    _h5file: h5py.File = None
+
     @classmethod
     def _load_container(cls, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
         group = h5file[str(prefix)]
         return group
 
     @classmethod
-    def load(cls: BaseModel, filename: Path) -> tuple["H5Group", list[str]]:
+    def load(cls: BaseModel, filename: Path) -> "H5Group":
         """Load a file into a tree of H5Group models.
 
         Args:
             filename: Path of HDF5 to load.
 
         Returns:
-            A tuple, the first object being the parsed H5Group model, the second being a list of unparsed keys.
+            The parsed H5Group model.
         """
-        with h5py.File(filename, "r") as h5file:
-            # TODO actually build up the list of unparsed keys
-            return cls._load(h5file, PurePosixPath("/")), []
+        h5file = h5py.File(filename, "r")
+        # TODO actually build up the list of unparsed keys
+        group = cls._load(h5file, PurePosixPath("/"))
+        group._h5file = h5file
+        return group
+
+    def close(self):
+        self._h5file.close()
+
+    def __enter__(self):
+        if self._h5file:
+            return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Group:
         return h5file.require_group(str(prefix))
@@ -144,4 +160,3 @@ class H5Group(_H5Base, BaseModel):
 """
         with h5py.File(filename, "w") as h5file:
             self._dump(h5file, PurePosixPath("/"))
-
