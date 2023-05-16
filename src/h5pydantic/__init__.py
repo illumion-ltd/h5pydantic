@@ -138,6 +138,8 @@ class H5Group(_H5Base, BaseModel):
         return group
 
     def close(self):
+        """Close the underlying HDF5 file.
+        """
         self._h5file.close()
 
     def __enter__(self):
