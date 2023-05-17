@@ -1,8 +1,8 @@
- API Reference
-==============
+API Reference
+=============
 
 h5pydantic
-==========
+----------
 
 .. autoclass:: h5pydantic.H5Group
     :members:
