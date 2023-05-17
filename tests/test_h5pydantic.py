@@ -53,10 +53,9 @@ def test_empty_roundtrip(tmp_path):
 
     empty_output.dump(hdf5_filename)
 
-    empty_input, unparsed = EmptyHDF.load(hdf5_filename)
+    empty_input = EmptyHDF.load(hdf5_filename)
 
     assert empty_output == empty_input
-    assert unparsed == []
 
 
 def test_nested(tmp_path):
@@ -75,10 +74,9 @@ def test_nested(tmp_path):
 
     exp_out.dump(hdf5_filename)
 
-    exp_in, unparsed = Experiment.load(hdf5_filename)
+    exp_in = Experiment.load(hdf5_filename)
 
     assert exp_in == exp_out
-    assert unparsed == []
 
 
 def test_enumerate(tmp_path):
@@ -96,16 +94,15 @@ def test_enumerate(tmp_path):
 
     exp_out.dump(hdf5_filename)
 
-    exp_in, unparsed = Experiment.load(hdf5_filename)
+    exp_in = Experiment.load(hdf5_filename)
 
     assert exp_in == exp_out
-    assert unparsed == []
 
 
 def test_dataset(tmp_path):
     class AreaDetectorImage(H5Dataset):
-        _shape = (3, 5)
-        _dtype = "int32"
+        shape_: tuple[int, ...] = (3, 5)
+        dtype_ = "int32"
 
     class Experiment(H5Group):
         image = AreaDetectorImage()
@@ -114,14 +111,16 @@ def test_dataset(tmp_path):
 
     exp_out = Experiment()
 
-    exp_out.image._data = np.zeros((3,5), dtype="int32")
+    exp_out.image.data_ = np.zeros((3, 5), dtype="int32")
 
     exp_out.dump(hdf5_filename)
 
-    exp_in, unparsed = Experiment.load(hdf5_filename)
+    exp_in = Experiment.load(hdf5_filename)
+
+    print(exp_out)
+    print(exp_in)
 
     assert exp_in == exp_out
-    assert unparsed == []
 
 # TODO test an attribute not defined
 # TODO test setting a value of the wrong type
