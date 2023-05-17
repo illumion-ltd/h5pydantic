@@ -15,6 +15,7 @@ Welcome to h5pydantic's documentation!
    tutorial
    reference
    roadmap
+   Changelog<news>
 
 Indices and tables
 ==================
