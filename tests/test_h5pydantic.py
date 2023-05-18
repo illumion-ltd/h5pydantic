@@ -111,14 +111,11 @@ def test_dataset(tmp_path):
 
     exp_out = Experiment()
 
-    exp_out.image.data_ = np.zeros((3, 5), dtype="int32")
+    exp_out.image.data_ = np.random.randint(256, size=(3, 5))
 
     exp_out.dump(hdf5_filename)
 
     exp_in = Experiment.load(hdf5_filename)
-
-    print(exp_out)
-    print(exp_in)
 
     assert exp_in == exp_out
 
