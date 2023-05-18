@@ -91,7 +91,7 @@ class H5Dataset(_H5Base, BaseModel):
     dtype_: str = "f"
 
     # FIXME is it possible to initialise this after we've got shape_ and dtype_ in the instance?
-    data_: h5py.Dataset = None
+    data_: Union[h5py.Dataset, numpy.ndarray] = None
 
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
         # FIXME check that the shape of data matches
@@ -103,8 +103,13 @@ class H5Dataset(_H5Base, BaseModel):
     @classmethod
     def _load_intrinsic(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath):
         # Really should be verifying all of the details match the class.
-        data = h5file[str(prefix)]
+        data = h5file[str(prefix)][()]
         return {"shape_": data.shape, "dtype_": str(data.dtype), "data_": data}
+
+    def __eq__(self, other):
+        intrinsic = numpy.array_equal(self.data_, other.data_)
+        children = all([getattr(self, k) == getattr(other, k) for k in self.__fields__ if not k.endswith("_")])
+        return intrinsic and children
 
 
 class H5Group(_H5Base, BaseModel):
@@ -162,3 +167,6 @@ class H5Group(_H5Base, BaseModel):
 """
         with h5py.File(filename, "w") as h5file:
             self._dump(h5file, PurePosixPath("/"))
+
+    def __eq__(self, other):
+        return all([getattr(self, k) == getattr(other, k) for k in self.__fields__ if not k.endswith("_")])
