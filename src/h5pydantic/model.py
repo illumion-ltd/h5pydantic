@@ -122,11 +122,6 @@ class H5Group(_H5Base, BaseModel):
     _h5file: h5py.File = None
 
     @classmethod
-    def _load_container(cls, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
-        group = h5file[str(prefix)]
-        return group
-
-    @classmethod
     def load(cls: BaseModel, filename: Path) -> "H5Group":
         """Load a file into a tree of H5Group models.
 
