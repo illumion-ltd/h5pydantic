@@ -53,9 +53,8 @@ def test_empty_roundtrip(tmp_path):
 
     empty_output.dump(hdf5_filename)
 
-    empty_input = EmptyHDF.load(hdf5_filename)
-
-    assert empty_output == empty_input
+    with EmptyHDF.load(hdf5_filename) as empty_input:
+        assert empty_output == empty_input
 
 
 def test_nested(tmp_path):
@@ -74,9 +73,8 @@ def test_nested(tmp_path):
 
     exp_out.dump(hdf5_filename)
 
-    exp_in = Experiment.load(hdf5_filename)
-
-    assert exp_in == exp_out
+    with Experiment.load(hdf5_filename) as exp_in:
+        assert exp_in == exp_out
 
 
 def test_enumerate(tmp_path):
@@ -94,9 +92,8 @@ def test_enumerate(tmp_path):
 
     exp_out.dump(hdf5_filename)
 
-    exp_in = Experiment.load(hdf5_filename)
-
-    assert exp_in == exp_out
+    with Experiment.load(hdf5_filename) as exp_in:
+        assert exp_in == exp_out
 
 
 def test_dataset(tmp_path):
@@ -115,9 +112,8 @@ def test_dataset(tmp_path):
 
     exp_out.dump(hdf5_filename)
 
-    exp_in = Experiment.load(hdf5_filename)
-
-    assert exp_in == exp_out
+    with Experiment.load(hdf5_filename) as exp_in:
+        assert exp_in == exp_out
 
 # TODO test an attribute not defined
 # TODO test setting a value of the wrong type
