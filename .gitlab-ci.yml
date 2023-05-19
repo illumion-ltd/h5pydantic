@@ -1,0 +1,13 @@
+stages:
+  - build
+  - test
+
+build-code-job:
+  stage: build
+  script:
+    - poetry build
+
+build-code-test:
+  stage: test
+  script:
+    - poetry run pytest
