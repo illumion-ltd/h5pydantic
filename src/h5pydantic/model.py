@@ -2,20 +2,32 @@ import h5py
 from pydantic import BaseModel
 import numpy
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from pathlib import Path, PurePosixPath
 import types
 
-from typing import Union
+from typing import Any, Union
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
 
 
-class _H5Base(ABC):
+class _H5Base(ABC, BaseModel):
     """An implementation detail, to share the _load and _dump APIs."""
 
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        for key, field in self.__fields__.items():
+            if key.endswith("_"):
+                continue
+
+            if isinstance(field.outer_type_, types.GenericAlias):
+                # FIXME clearly I should not be looking at these attributes.
+                if not issubclass(field.outer_type_.__origin__, list):
+                    raise ValueError(f"h5pydantic only handles list containers, not '{field.outer_type_.__origin__}'")
+
+    @abstractmethod
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
-        pass
+        """Dump the group/dataset container to the h5file."""
 
     def _dump_children(self, container: _H5Container, h5file: h5py.File, prefix: PurePosixPath):
         for key, field in self.__fields__.items():
@@ -47,10 +59,6 @@ class _H5Base(ABC):
                 continue
 
             if isinstance(field.outer_type_, types.GenericAlias):
-                # FIXME clearly I should not be looking at these attributes.
-                if not issubclass(field.outer_type_.__origin__, list):
-                    raise ValueError(f"h5pydantic only handles list containers, not '{field.outer_type_.__origin__}'")
-
                 d[key] = []
                 indexes = [int(i) for i in h5file[str(prefix / key)].keys()]
                 indexes.sort()
@@ -73,7 +81,7 @@ class _H5Base(ABC):
         return cls.parse_obj(d)
 
 
-class H5Dataset(_H5Base, BaseModel):
+class H5Dataset(_H5Base):
     """A pydantic Basemodel specifying a HDF5 Dataset."""
 
     class Config:
@@ -112,7 +120,7 @@ class H5Dataset(_H5Base, BaseModel):
         return intrinsic and children
 
 
-class H5Group(_H5Base, BaseModel):
+class H5Group(_H5Base):
     """A pydantic BaseModel specifying a HDF5 Group."""
 
     class Config:
