@@ -67,8 +67,6 @@ class _H5Base(ABC, BaseModel):
                     d[key].insert(i, field.type_._load(h5file, prefix / key / str(i)))
             elif issubclass(field.type_, _H5Base):
                 d[key] = field.type_._load(h5file, prefix / key)
-            elif issubclass(field.type_, list):
-                pass
             else:
                 d[key] = h5file[str(prefix)].attrs[key]
 
