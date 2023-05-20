@@ -19,3 +19,12 @@ build-code-test:
   stage: test
   script:
     - poetry run pytest
+
+testing:
+  stage: test
+  script:
+    - poetry run pytest --verbose --junit-xml=report.xml --cov --cov-fail-under=100
+  artifacts:
+    when: always
+    reports:
+      junit: /builds/croy/python-devop/tests/report.xml
