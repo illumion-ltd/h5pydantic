@@ -27,4 +27,4 @@ testing:
   artifacts:
     when: always
     reports:
-      junit: /builds/croy/python-devop/tests/report.xml
+      junit: /builds/clinton.roy/h5pydantic/report.xml
