@@ -9,3 +9,7 @@ def test_invalid_container_classes():
 
     with pytest.raises(ValueError, match="only handles list containers"):
         c = DictContainer()
+
+# FIXME test an extra argument is not allowed
+# FIXME test assignment is validated
+# FIXME test that list append is validated
