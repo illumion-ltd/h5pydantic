@@ -46,3 +46,6 @@ filename = "docs/news.rst"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poe.tasks]
+test = "pytest --verbose --junit-xml=report.xml --cov --cov-fail-under=100"
