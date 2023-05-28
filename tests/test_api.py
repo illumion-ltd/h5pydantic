@@ -13,3 +13,4 @@ def test_invalid_container_classes():
 # FIXME test an extra argument is not allowed
 # FIXME test assignment is validated
 # FIXME test that list append is validated
+# FIXME there should be a root validator making sure all types are hdf5 friendly
