@@ -24,7 +24,7 @@ def varname():
 # TODO handle NaN values
 # TODO calculcate the integers min/max properly
 @composite
-def value(draw, types=st.one_of(st.integers(min_value=-2**63, max_value=2**63), st.floats(allow_nan=False))):
+def value(draw, types=st.one_of(st.integers(min_value=-2**63, max_value=2**64-1), st.floats(allow_nan=False))):
     """A strategy that produced a valid HD5Group dictionary definition."""
     val = draw(types)
     return (type(val), val)
