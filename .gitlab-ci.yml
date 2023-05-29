@@ -23,7 +23,7 @@ build-code-test:
 testing:
   stage: test
   script:
-    - poetry run pytest --verbose --junit-xml=report.xml --cov --cov-fail-under=100
+    - poetry run pytest --verbose --junit-xml=report.xml --cov --cov-branch --cov-fail-under=100
   artifacts:
     when: always
     reports:
