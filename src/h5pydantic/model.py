@@ -149,8 +149,7 @@ class H5Group(_H5Base):
         self._h5file.close()
 
     def __enter__(self):
-        if self._h5file:
-            return self
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
