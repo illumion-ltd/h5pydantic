@@ -20,7 +20,7 @@ build-code-test:
   script:
     - poetry run pytest
 
-testing:
+.test:
   stage: test
   script:
     - poetry run pytest --verbose --junit-xml=report.xml --cov --cov-branch --cov-fail-under=100
@@ -28,3 +28,15 @@ testing:
     when: always
     reports:
       junit: /builds/clinton.roy/h5pydantic/report.xml
+
+test-3.9:
+  extends: ".test"
+  image: python:3.9
+
+test-3.10:
+  extends: ".test"
+  image: python:3.10
+
+test-3.11:
+  extends: ".test"
+  image: python:3.11
