@@ -41,7 +41,10 @@ class _H5Base(ABC, BaseModel):
                 for i, elem in enumerate(value):
                     elem._dump(h5file, prefix / key / str(i))
             else:
-                container.attrs[key] = getattr(self, key)
+                try:
+                    container.attrs[key] = getattr(self, key)
+                except Exception as e:
+                    raise ValueError(f"While attempting to save attribute ``{key}`` = ``{getattr(self, key)}``, the following error occured") from e
 
     def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
         container = self._dump_container(h5file, prefix)
