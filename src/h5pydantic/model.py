@@ -7,6 +7,7 @@ from pathlib import Path, PurePosixPath
 import types
 
 from typing import Any, Union
+from typing_extensions import Self
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
 
@@ -131,7 +132,7 @@ class H5Group(_H5Base):
     _h5file: h5py.File = None
 
     @classmethod
-    def load(cls: BaseModel, filename: Path) -> "H5Group":
+    def load(cls: BaseModel, filename: Path) -> Self:
         """Load a file into a tree of H5Group models.
 
         Args:

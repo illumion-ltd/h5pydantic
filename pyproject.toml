@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "h5pydantic"
-version = "0.3.1"
+version = "0.3.2"
 description = "Pydantic models for HDF5 files."
 authors = ["Clinton Roy <clinton.roy@gmail.com>"]
 readme = "README.md"
@@ -20,6 +20,7 @@ classifiers = [
 python = "^3.9"
 h5py = "^3.8.0"
 pydantic = "^1.10.7"
+typing-extensions = "^4.6.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
