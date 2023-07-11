@@ -40,7 +40,7 @@ class _H5Base(ABC, BaseModel):
                 continue
             value = getattr(self, key)
             if issubclass(field.type_, Enum):
-                H5Enum._dump(h5file, container, key, value, field)
+                H5Enum._dump(h5file, container, key, value.value, field)
 
             elif isinstance(value, _H5Base):
                 value._dump(h5file, prefix / key)
@@ -63,7 +63,8 @@ class _H5Base(ABC, BaseModel):
 
     @classmethod
     def _load_children(cls, h5file: h5py.File, prefix: PurePosixPath):
-        d = {}
+        # FIXME specialise away Any
+        d: dict[str, Any] = {}
         for key, field in cls.__fields__.items():
             if key.endswith("_"):
                 continue
@@ -87,7 +88,7 @@ class _H5Base(ABC, BaseModel):
         return d
 
     @classmethod
-    def _load(cls, h5file: h5py.File, prefix: PurePosixPath) -> tuple["H5Group", list[str]]:
+    def _load(cls, h5file: h5py.File, prefix: PurePosixPath) -> Self:
         d = cls._load_intrinsic(h5file, prefix)
         d.update(cls._load_children(h5file, prefix))
         return cls.parse_obj(d)
@@ -121,7 +122,7 @@ class H5Dataset(_H5Base):
         return dataset
 
     @classmethod
-    def _load_intrinsic(cls: BaseModel, h5file: h5py.File, prefix: PurePosixPath):
+    def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
         # Really should be verifying all of the details match the class.
         data = h5file[str(prefix)][()]
         return {"shape_": data.shape, "dtype_": str(data.dtype), "data_": data}
@@ -142,7 +143,7 @@ class H5Group(_H5Base):
     _h5file: h5py.File = None
 
     @classmethod
-    def load(cls: BaseModel, filename: Path) -> Self:
+    def load(cls, filename: Path) -> Self:
         """Load a file into a tree of H5Group models.
 
         Args:
