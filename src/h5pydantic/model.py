@@ -4,13 +4,15 @@ import numpy
 
 from abc import ABC, abstractmethod
 from pathlib import Path, PurePosixPath
+from enum import Enum
 import types
 
 from typing import Any, Union
 from typing_extensions import Self
 
-_H5Container = Union[h5py.Group, h5py.Dataset]
+from h5pydantic.enum import H5Enum
 
+_H5Container = Union[h5py.Group, h5py.Dataset]
 
 class _H5Base(ABC, BaseModel):
     """An implementation detail, to share the _load and _dump APIs."""
@@ -33,10 +35,14 @@ class _H5Base(ABC, BaseModel):
     def _dump_children(self, container: _H5Container, h5file: h5py.File, prefix: PurePosixPath):
         for key, field in self.__fields__.items():
             # FIXME I think I should be explicitly testing these keys against a known list, at init time though.
+            # FIXME I really don't like this delegation code.
             if key.endswith("_"):
                 continue
             value = getattr(self, key)
-            if isinstance(value, _H5Base):
+            if issubclass(field.type_, Enum):
+                H5Enum._dump(h5file, container, key, value, field)
+
+            elif isinstance(value, _H5Base):
                 value._dump(h5file, prefix / key)
             elif isinstance(value, list):
                 for i, elem in enumerate(value):
@@ -71,6 +77,10 @@ class _H5Base(ABC, BaseModel):
                     d[key].insert(i, field.type_._load(h5file, prefix / key / str(i)))
             elif issubclass(field.type_, _H5Base):
                 d[key] = field.type_._load(h5file, prefix / key)
+
+            elif issubclass(field.type_, Enum):
+                d[key] = H5Enum._load(h5file, prefix, key, field)
+
             else:
                 d[key] = h5file[str(prefix)].attrs[key]
 
@@ -168,7 +178,7 @@ class H5Group(_H5Base):
             filename: Path to dump the the HDF5Group to.
 
         Returns: None
-"""
+        """
         with h5py.File(filename, "w") as h5file:
             self._dump(h5file, PurePosixPath("/"))
 
