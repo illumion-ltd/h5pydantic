@@ -9,6 +9,7 @@ before_script:
 stages:
   - build
   - test
+  - typecheck
 
 build-code-job:
   stage: build
@@ -19,6 +20,11 @@ build-code-test:
   stage: test
   script:
     - poetry run pytest
+
+typecheck:
+  stage: typecheck
+  script:
+    - poetry run mypy src/h5pydantic
 
 .test:
   stage: test
