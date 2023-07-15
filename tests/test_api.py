@@ -7,11 +7,10 @@ def hdf_path(tmp_path_factory):
     return tmp_path_factory.mktemp("data") / "test.hdf"
 
 def test_invalid_container_classes():
-    class DictContainer(H5Group):
-        container: dict[str, str] = {}
-
     with pytest.raises(ValueError, match="only handles list containers"):
-        c = DictContainer()
+        class DictContainer(H5Group):
+            container: dict[str, str] = {}
+
 
 def test_invalid_value_produces_useful_exception(hdf_path):
     class Experiment(H5Group):

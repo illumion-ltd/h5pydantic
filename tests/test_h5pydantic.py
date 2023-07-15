@@ -1,4 +1,4 @@
-from h5pydantic import H5Group, H5Dataset
+from h5pydantic import H5Group, H5Dataset, H5Integer32
 import h5py
 
 import numpy as np
@@ -96,23 +96,22 @@ def test_enumerate(tmp_path):
         assert exp_in == exp_out
 
 
-def test_dataset(tmp_path):
-    class AreaDetectorImage(H5Dataset):
-        shape_: tuple[int, ...] = (3, 5)
-        dtype_ = "int32"
+def test_dataset(hdf_path):
+    IMAGE_SHAPE = (3, 5)
+
+    class AreaDetectorImage(H5Dataset, shape=IMAGE_SHAPE, dtype=H5Integer32):
+        pass
 
     class Experiment(H5Group):
         image = AreaDetectorImage()
 
-    hdf5_filename = tmp_path / "test.hdf"
-
     exp_out = Experiment()
 
-    exp_out.image.data_ = np.random.randint(256, size=(3, 5))
+    exp_out.image.data(np.random.randint(256, size=IMAGE_SHAPE))
 
-    exp_out.dump(hdf5_filename)
+    exp_out.dump(hdf_path)
 
-    with Experiment.load(hdf5_filename) as exp_in:
+    with Experiment.load(hdf_path) as exp_in:
         assert exp_in == exp_out
 
 # TODO test an attribute not defined

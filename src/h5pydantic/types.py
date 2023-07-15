@@ -2,6 +2,8 @@ from pydantic import StrictInt
 
 import h5py.h5t
 
+import numpy
+
 
 class H5Type():
     """All subclasses must be able to save all their possible values to HDF5 without error."""
@@ -15,3 +17,24 @@ class H5Integer64(StrictInt, H5Type):
     ge = -2**63
     le = 2**64 - 1
     h5pyid = h5py.h5t.NATIVE_INT64
+    numpy = numpy.int64
+
+
+class H5Integer32(StrictInt, H5Type):
+    """Signed Integers, using 32 bits."""
+
+    ge = -2**31
+    le = 2**31 - 1
+    h5pyid = h5py.h5t.NATIVE_INT32
+    numpy = numpy.int32
+
+
+def _hdfstrtoh5type(hdfdtype: str) -> H5Type|float:
+    # FIXME this should be a registered look up table or something more automatic
+    print("_hdfstrtoh5type", hdfdtype)
+    if hdfdtype == "int32":
+        return H5Integer32
+    elif hdfdtype == "int64":
+        return H5Integer64
+    else:
+        raise ValueError(f"Unknown hdf5 data dtype string '{hdfdtype}'")
