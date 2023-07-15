@@ -25,9 +25,8 @@ class _H5Base(BaseModel):
                 continue
 
             if isinstance(field.outer_type_, types.GenericAlias):
-                # FIXME clearly I should not be looking at these attributes.
                 if get_origin(field.outer_type_) != list:
-                    raise ValueError(f"h5pydantic only handles list containers, not '{field.outer_type_.__origin__}'")
+                    raise ValueError(f"h5pydantic only handles list containers, not '{get_origin(field.outer_type_)}'")
 
                 if issubclass(field.type_, Enum):
                     raise ValueError(f"h5pydantic does not handle lists of enums")
@@ -166,11 +165,7 @@ class H5Dataset(_H5Base):
 class H5Group(_H5Base):
     """A pydantic BaseModel specifying a HDF5 Group."""
 
-    class Config:
-        # r the _h5file attribute.
-        underscore_attrs_are_private = True
-
-    _h5file: h5py.File = None
+    _h5file: h5py.File = PrivateAttr()
 
     @classmethod
     def load(cls, filename: Path) -> Self:
