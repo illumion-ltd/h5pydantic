@@ -16,6 +16,8 @@ from .types import H5Type, _hdfstrtoh5type
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
 
+# FIXME strings probably need some form of validation, printable seems good, but may be too strict
+
 class _H5Base(BaseModel):
     """An implementation detail, to share the _load and _dump APIs."""
 
@@ -142,8 +144,6 @@ class H5Dataset(_H5Base):
             return self._h5config.dtype
 
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
-        print("dataset dump container", self)
-
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
 

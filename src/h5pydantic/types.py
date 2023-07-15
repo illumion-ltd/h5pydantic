@@ -9,9 +9,10 @@ class H5Type():
     """All subclasses must be able to save all their possible values to HDF5 without error."""
 
 
-# FIXME, add other types, add tests for ge/le for them as well.
+# FIXME add other types, add tests for ge/le for them as well.
+# FIXME add a validator, for ints not to accept float
 
-class H5Integer64(StrictInt, H5Type):
+class H5Integer64(int, H5Type):
     """Signed Integers, using 64 bits."""
 
     ge = -2**63
@@ -20,7 +21,7 @@ class H5Integer64(StrictInt, H5Type):
     numpy = numpy.int64
 
 
-class H5Integer32(StrictInt, H5Type):
+class H5Integer32(int, H5Type):
     """Signed Integers, using 32 bits."""
 
     ge = -2**31
