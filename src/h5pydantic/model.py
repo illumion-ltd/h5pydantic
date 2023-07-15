@@ -1,5 +1,5 @@
 import h5py
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, PrivateAttr, StrictInt
 import numpy
 
 from abc import ABC, abstractmethod
@@ -105,11 +105,10 @@ class _H5Base(BaseModel):
         return ret
 
 
-
 class H5DatasetConfig(BaseModel):
     """All of the dataset configuration options."""
     # FIXME There are a *lot* of dataset features to be supported as optional flags, compression, chunking etc.
-    shape: tuple[int, ...]
+    shape: tuple[StrictInt, ...]
     dtype: float|Type[H5Type]|Type[Enum]
 
 
