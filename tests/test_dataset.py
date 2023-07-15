@@ -1,1 +1,10 @@
+from h5pydantic import H5Dataset, H5Integer64
+
+import pytest
+
 # FIXME check for strict ints in dataset shape tuples, don't accept floats
+
+def test_shape_ints_are_strictly_ints():
+    with pytest.raises(ValueError, match="value is not a valid integer"):
+        class FloatShape(H5Dataset, shape=(1.0, 2.0), dtype=H5Integer64):
+            pass
