@@ -25,15 +25,10 @@ def varname():
 # TODO calculcate the integers min/max properly
 @composite
 def value(draw, types=st.one_of(st.integers(min_value=-2**63, max_value=2**64-1), st.floats(allow_nan=False))):
-    """A strategy that produced a valid HD5Group dictionary definition."""
+    """A strategy that produces a valid HD5Group dictionary definition."""
     val = draw(types)
     return (type(val), val)
 
-
-
-@pytest.fixture(scope="session")
-def hdf_path(tmp_path_factory):
-    return tmp_path_factory.mktemp("data") / "roundtrip.hdf"
 
 @given(d=st.dictionaries(min_size=1,
                          keys=varname(),
@@ -47,5 +42,5 @@ def test_roundtrip(d, hdf_path):
 
     output.dump(hdf_path)
 
-    with dynamic_model.load(hdf_path) as input:
-        assert output == input
+    with dynamic_model.load(hdf_path) as loaded:
+        assert output == loaded
