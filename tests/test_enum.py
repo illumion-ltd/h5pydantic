@@ -1,6 +1,7 @@
-from h5pydantic import H5Group, H5Integer64
-
+from h5pydantic import H5Dataset, H5Group, H5Integer64
 from enum import IntEnum, unique
+
+import numpy as np
 
 import pytest
 
@@ -13,9 +14,9 @@ import pytest
 # FIXME check what happens with a negative number
 # FIXME check what happens with an out of sequence number
 # FIXME test using the same enum twice in one hdf5 file
-# FIXME can we make a list of enums?
 # FIXME can we make a dataset of enums?
 # FIXME test that all values fit inside the base datatype
+# FIXME test that the loaded underlying datatype is the same as that written out
 
 class ScanningMode(IntEnum):
     INSTANTANEOUS = 1
@@ -23,7 +24,7 @@ class ScanningMode(IntEnum):
     FLYSCAN = 3
 
     @classmethod
-    def h5dtype(cls):
+    def dtype(cls):
         return H5Integer64
 
 @pytest.mark.parametrize("mode", ScanningMode.__members__.values())
@@ -36,6 +37,33 @@ def test_enum_works(hdf_path, mode):
     exp.dump(hdf_path)
 
     with Experiment.load(hdf_path) as imported:
+
         assert exp == imported
 
+def test_list_enum_fails(hdf_path):
+    with pytest.raises(ValueError, match="h5pydantic does not handle lists of enums"):
+        class Experiment(H5Group):
+            modes: list[ScanningMode]
+
+
+from enum import Enum
+from typing import Type
+
+def test_dataset_enum_works(hdf_path):
+    class DatasetModes(H5Dataset, shape=(3,), dtype=ScanningMode):
+        pass
     
+    class Experiment(H5Group):
+        modes = DatasetModes()
+
+    m = DatasetModes()
+
+    exp = Experiment(modes=DatasetModes())
+    exp.modes.data(np.array([ScanningMode.INSTANTANEOUS, ScanningMode.STEPANDSHOOT, ScanningMode.FLYSCAN]))
+
+    exp.dump(hdf_path)
+
+    with Experiment.load(hdf_path) as loaded:
+        print("exp", exp.modes._data)
+        print("loaded", loaded.modes._data)
+        assert exp == loaded

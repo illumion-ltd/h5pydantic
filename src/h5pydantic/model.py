@@ -1,5 +1,5 @@
 import h5py
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 import numpy
 
 from abc import ABC, abstractmethod
@@ -7,26 +7,30 @@ from pathlib import Path, PurePosixPath
 from enum import Enum
 import types
 
+from typing import get_args, get_origin
 from typing import Any, Union
-from typing_extensions import Self
+from typing_extensions import Self, Type
 
-from h5pydantic.enum import H5Enum
+from .enum import H5Enum
+from .types import H5Type, _hdfstrtoh5type
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
 
-class _H5Base(ABC, BaseModel):
+class _H5Base(BaseModel):
     """An implementation detail, to share the _load and _dump APIs."""
 
-    def __init__(self, **data: Any):
-        super().__init__(**data)
+    def __init_subclass__(self, **data: Any):
         for key, field in self.__fields__.items():
             if key.endswith("_"):
                 continue
 
             if isinstance(field.outer_type_, types.GenericAlias):
                 # FIXME clearly I should not be looking at these attributes.
-                if not issubclass(field.outer_type_.__origin__, list):
+                if get_origin(field.outer_type_) != list:
                     raise ValueError(f"h5pydantic only handles list containers, not '{field.outer_type_.__origin__}'")
+
+                if issubclass(field.type_, Enum):
+                    raise ValueError(f"h5pydantic does not handle lists of enums")
 
     @abstractmethod
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
@@ -39,14 +43,15 @@ class _H5Base(ABC, BaseModel):
             if key.endswith("_"):
                 continue
             value = getattr(self, key)
-            if issubclass(field.type_, Enum):
+            if get_origin(field.outer_type_) is list:
+                for i, elem in enumerate(value):
+                    elem._dump(h5file, prefix / key / str(i))
+            elif issubclass(field.type_, Enum):
                 H5Enum._dump(h5file, container, key, value.value, field)
 
             elif isinstance(value, _H5Base):
                 value._dump(h5file, prefix / key)
-            elif isinstance(value, list):
-                for i, elem in enumerate(value):
-                    elem._dump(h5file, prefix / key / str(i))
+
             else:
                 try:
                     container.attrs[key] = getattr(self, key)
@@ -91,45 +96,71 @@ class _H5Base(ABC, BaseModel):
     def _load(cls, h5file: h5py.File, prefix: PurePosixPath) -> Self:
         d = cls._load_intrinsic(h5file, prefix)
         d.update(cls._load_children(h5file, prefix))
-        return cls.parse_obj(d)
+        ret = cls.parse_obj(d)
+
+        # FIXME awful hack, _data isn't being loaded by parse_obj for some reason
+        if "_data" in d:
+            ret._data = d["_data"]
+
+        return ret
+
+
+
+class H5DatasetConfig(BaseModel):
+    """All of the dataset configuration options."""
+    # FIXME There are a *lot* of dataset features to be supported as optional flags, compression, chunking etc.
+    shape: tuple[int, ...]
+    dtype: float|Type[H5Type]|Type[Enum]
 
 
 class H5Dataset(_H5Base):
     """A pydantic Basemodel specifying a HDF5 Dataset."""
 
+    _h5config: H5DatasetConfig = PrivateAttr()
+    _data: numpy.ndarray = PrivateAttr()
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        cls._h5config = H5DatasetConfig(**kwargs)
+
     class Config:
         # Allows numpy.ndarray (which doesn't have a validator).
         arbitrary_types_allowed = True
 
-    # FIXME check that all underscore attributes are special attributes
-
-    # FIXME refactor _load/_dump apis
-    # There are a *lot* of dataset features to be supported as optional flags, compression, chunking etc.
     # FIXME test for attributes on datasets
-    # FIXME I'm not comfortable with shadowing these fields like this,
-    # but it's nice to have some ns to put config variables in.
-    shape_: tuple[int, ...]
-    dtype_: str = "f"
 
-    # FIXME is it possible to initialise this after we've got shape_ and dtype_ in the instance?
-    data_: Union[h5py.Dataset, numpy.ndarray] = None
+    def data(self, data: numpy.ndarray):
+        """Set the data of the dataset.
+
+        The expectation is that the dataset will be created as a whole, then set using this method.
+        """
+        # FIXME check shape and datatype are compatible, tests for that.
+        self._data = data
+
+    def _dtype(self) -> H5Type:
+        if issubclass(self._h5config.dtype, Enum):
+            return self._h5config.dtype.dtype()
+        else:
+            return self._h5config.dtype
 
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
+        print("dataset dump container", self)
+
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
-        dataset = h5file.require_dataset(str(prefix), shape=self.shape_, dtype=self.dtype_)
-        dataset[:] = self.data_
+
+        dataset = h5file.require_dataset(str(prefix), shape=self._h5config.shape, dtype=self._dtype().numpy, data=self._data)
         return dataset
 
     @classmethod
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
         # Really should be verifying all of the details match the class.
         data = h5file[str(prefix)][()]
-        return {"shape_": data.shape, "dtype_": str(data.dtype), "data_": data}
+        return {"_config": H5DatasetConfig(shape = data.shape, dtype = _hdfstrtoh5type(data.dtype)), "_data": data}
 
     def __eq__(self, other):
-        intrinsic = numpy.array_equal(self.data_, other.data_)
-        children = all([getattr(self, k) == getattr(other, k) for k in self.__fields__ if not k.endswith("_")])
+        intrinsic = numpy.array_equal(self._data, other._data)
+        children = all([getattr(self, k) == getattr(other, k) for k in self.__fields__])
         return intrinsic and children
 
 
@@ -137,7 +168,7 @@ class H5Group(_H5Base):
     """A pydantic BaseModel specifying a HDF5 Group."""
 
     class Config:
-        # For the _h5file attribute.
+        # r the _h5file attribute.
         underscore_attrs_are_private = True
 
     _h5file: h5py.File = None
@@ -184,4 +215,4 @@ class H5Group(_H5Base):
             self._dump(h5file, PurePosixPath("/"))
 
     def __eq__(self, other):
-        return all([getattr(self, k) == getattr(other, k) for k in self.__fields__ if not k.endswith("_")])
+        return all([getattr(self, k) == getattr(other, k) for k in self.__fields__])

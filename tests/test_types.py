@@ -1,4 +1,4 @@
-from h5pydantic.types import H5Integer64
+from h5pydantic.types import H5Integer64, _hdfstrtoh5type
 
 import h5py
 
@@ -36,3 +36,7 @@ def test_outside_integer_maximum_fails(tmp_path):
     with h5py.File(tmp_path / "test.hdf", 'w') as h5:
         with pytest.raises(TypeError, match="has no native HDF5 equivalent"):
             h5["/"].attrs["number"] = H5Integer64.le + 1
+
+def test_unknown_hdf_data_type_fails():
+    with pytest.raises(ValueError, match="nosuchtype"):
+        _hdfstrtoh5type("nosuchtype")
