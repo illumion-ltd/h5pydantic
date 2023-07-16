@@ -14,7 +14,7 @@ def varname_st(): return name_str(string.ascii_letters)
 @st.composite
 def type_and_value_st(draw):
     class DummyDataSet(H5Dataset, shape=(2,3), dtype=H5Integer32): pass
-    dtype = draw(st.sampled_from([H5Integer32, H5Integer64, float, str, H5Group]))
+    dtype = draw(st.sampled_from([H5Integer32, H5Integer64, float, str, H5Dataset, H5Group]))
     if dtype is H5Integer32:
         strat = st.integers(min_value=H5Integer32.ge, max_value=H5Integer32.le)
     elif dtype is H5Integer64:
@@ -24,18 +24,13 @@ def type_and_value_st(draw):
     elif dtype is str:
         strat = st.text(string.printable)
     elif dtype is H5Dataset:
-        dtype = DummyDataSet
-        strat = st.just(DummyDataSet())
+        dataset = DummyDataSet()
+        dataset.data(numpy.random.randint(-100, 100, size=dataset._h5config.shape))
+        return (DummyDataSet, dataset)
     elif dtype is H5Group:
         group = draw(st.deferred(lambda: group_st()))
         return (group, group())
     return (dtype, draw(strat))
-
-def populate_datasets(group: H5Group):
-    for name, field in group.__fields__.items():
-        if issubclass(field.type_, H5Dataset):
-            value = getattr(group, name)
-            value.data(numpy.random(value._h5config.shape))
 
 @st.composite
 def group_st(draw):
@@ -46,7 +41,6 @@ def group_st(draw):
 @given(group=group_st())
 def test_roundtrip(group, hdf_path):
     model = group()
-    populate_datasets(group)
     model.dump(hdf_path)
     with group.load(hdf_path) as loaded:
         assert model == loaded

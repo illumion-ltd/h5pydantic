@@ -1,0 +1,5 @@
+# TODO add datasets to values
+# TODO add lists
+# TODO add enum
+# TODO handle NaN values, maybe get rid of == and have a _data_equality
+# FIXME generate datasets on the fly
