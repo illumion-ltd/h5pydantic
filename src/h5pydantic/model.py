@@ -41,8 +41,6 @@ class _H5Base(BaseModel):
         for key, field in self.__fields__.items():
             # FIXME I think I should be explicitly testing these keys against a known list, at init time though.
             # FIXME I really don't like this delegation code.
-            if key.endswith("_"):
-                continue
             value = getattr(self, key)
             if get_origin(field.outer_type_) is list:
                 for i, elem in enumerate(value):
@@ -98,7 +96,6 @@ class _H5Base(BaseModel):
         d = cls._load_intrinsic(h5file, prefix)
         d.update(cls._load_children(h5file, prefix))
         ret = cls.parse_obj(d)
-
         # FIXME awful hack, _data isn't being loaded by parse_obj for some reason
         if "_data" in d:
             ret._data = d["_data"]

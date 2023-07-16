@@ -32,7 +32,6 @@ class H5Integer32(int, H5Type):
 
 def _hdfstrtoh5type(hdfdtype: str) -> H5Type|float:
     # FIXME this should be a registered look up table or something more automatic
-    print("_hdfstrtoh5type", hdfdtype)
     if hdfdtype == "int32":
         return H5Integer32
     elif hdfdtype == "int64":
