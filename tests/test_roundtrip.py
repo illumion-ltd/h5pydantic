@@ -1,5 +1,4 @@
 from hypothesis import given, strategies as st
-from pydantic import create_model
 from h5pydantic import H5Group, H5Dataset, H5DatasetConfig, H5Integer32, H5Integer64
 import numpy, string, types
 
@@ -40,7 +39,7 @@ def dataset_st(draw):
 def group_st(draw):
     classname = draw(classname_st())
     d = draw(st.dictionaries(min_size=1, keys=varname_st(), values=type_and_value_st()))
-    return create_model(classname, __base__=H5Group, **d)
+    return types.new_class(classname, (H5Group,), d)
 
 @given(group=group_st())
 def test_roundtrip(group, hdf_path):
