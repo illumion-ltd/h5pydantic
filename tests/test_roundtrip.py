@@ -35,7 +35,7 @@ def populate_datasets(group: H5Group):
     for name, field in group.__fields__.items():
         if issubclass(field.type_, H5Dataset):
             value = getattr(group, name)
-            value.data(numpy.random(value._h5config.shape, 10))
+            value.data(numpy.random(value._h5config.shape))
 
 @st.composite
 def group_st(draw):
