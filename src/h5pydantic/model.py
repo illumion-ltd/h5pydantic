@@ -23,9 +23,6 @@ class _H5Base(BaseModel):
 
     def __init_subclass__(self, **data: Any):
         for key, field in self.__fields__.items():
-            if key.endswith("_"):
-                continue
-
             if isinstance(field.outer_type_, types.GenericAlias):
                 if get_origin(field.outer_type_) != list:
                     raise ValueError(f"h5pydantic only handles list containers, not '{get_origin(field.outer_type_)}'")
@@ -70,9 +67,6 @@ class _H5Base(BaseModel):
         # FIXME specialise away Any
         d: dict[str, Any] = {}
         for key, field in cls.__fields__.items():
-            if key.endswith("_"):
-                continue
-
             if isinstance(field.outer_type_, types.GenericAlias):
                 d[key] = []
                 indexes = [int(i) for i in h5file[str(prefix / key)].keys()]
