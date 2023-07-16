@@ -6,13 +6,22 @@ from h5pydantic import H5Integer32, H5Integer64
 
 import numpy
 
-import pytest
-
 import string
 import io
-import types
 
-def varname():
+
+def classname_st():
+    """A strategy that produces a valid python class name."""
+    head_alphabet = string.ascii_uppercase
+    tail_alphabet = head_alphabet + string.digits + "_"
+
+    return st.builds(
+        lambda a, b: a + b,
+        st.text(head_alphabet, min_size=1, max_size=1),
+        st.text(tail_alphabet))
+
+
+def varname_st():
     """A strategy that produces a valid python variable name"""
 
     head_alphabet = string.ascii_letters
@@ -26,16 +35,17 @@ def varname():
 # TODO add datasets to values
 # TODO add lists
 # TODO add enum
-# TODO make it recursive.
 # TODO handle NaN values, maybe get rid of == and have a _data_equality
 @st.composite
-def type_value_tup(draw):
+def type_and_value_st(draw):
+    """A strategy that produces a valid type and associated value."""
     # FIXME generate these on the fly
     class DummyDataSet(H5Dataset, shape=(2,3), dtype=H5Integer32):
         pass
 
     dtype = draw(st.sampled_from([H5Integer32, H5Integer64, 
                                   float, str,
+                                  H5Group,
                                   #H5Dataset,
                                   ]))
     
@@ -51,6 +61,9 @@ def type_value_tup(draw):
         # FIXME mix it up a bit
         dtype = DummyDataSet
         strat = st.just(DummyDataSet())
+    elif dtype is H5Group:
+        group = draw(st.deferred(lambda: group_st()))
+        return (group, group())
 
     return (dtype, draw(strat))
 
@@ -58,33 +71,27 @@ def type_value_tup(draw):
 def populate_datasets(group: H5Group):
     for name, field in group.__fields__.items():
         if issubclass(field.type_, H5Dataset):
-
-            # FIXME randomise the fill value)
             value = getattr(group, name)
-            value.data(numpy.full(value._h5config.shape, 10))
+            value.data(numpy.random(value._h5config.shape, 10))
 
 
-@given(d=st.dictionaries(min_size=1,
-                         keys=varname(),
-                         values=type_value_tup()))
-def test_roundtrip(d):
-    d["__base__"] = H5Group
+@st.composite
+def group_st(draw):
+    classname = draw(classname_st())
 
-    dynamic_model = create_model("dynamic_model", **d)
+    d = draw(st.dictionaries(min_size=1,
+                             keys=varname_st(),
+                             values=type_and_value_st()))
 
-    output = dynamic_model()
+    return create_model(classname, __base__=H5Group, **d)
 
-    populate_datasets(output)
 
-    bio = io.BytesIO()
-    output.dump(bio)
+@given(group=group_st())
+def test_roundtrip(group, hdf_path):
+    model = group()
+    populate_datasets(group)
 
-    with dynamic_model.load(bio) as loaded:
-        for key, field in loaded.__fields__.items():
-            if issubclass(field.type_, H5Dataset):
-                val = getattr(loaded, key)
-                print("loaded", val._data)
-            
+    model.dump(hdf_path)
 
-        assert output == loaded
-
+    with group.load(hdf_path) as loaded:
+        assert model == loaded
