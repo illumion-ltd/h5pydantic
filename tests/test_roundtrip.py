@@ -1,9 +1,7 @@
 from hypothesis import given, strategies as st
 from pydantic import create_model
 from h5pydantic import H5Group, H5Dataset, H5DatasetConfig, H5Integer32, H5Integer64
-import numpy
-import string
-import types
+import numpy, string, types
 
 def name_str(head_alphabet):
     tail_alphabet = head_alphabet + string.digits + "_"
