@@ -3,10 +3,7 @@ from pydantic import create_model
 from h5pydantic import H5Group, H5Dataset, H5DatasetConfig, H5Integer32, H5Integer64
 import numpy, string, types
 
-def name_str(head_alphabet):
-    tail_alphabet = head_alphabet + string.digits + "_"
-    return st.builds(str.__add__, st.sampled_from(head_alphabet), st.text(tail_alphabet))
-
+def name_str(head_alphabet): return st.builds(str.__add__, st.sampled_from(head_alphabet), st.text(head_alphabet + string.digits + "_"))
 def classname_st(): return name_str(string.ascii_uppercase)
 def varname_st(): return name_str(string.ascii_letters)
 
