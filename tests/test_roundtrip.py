@@ -27,7 +27,7 @@ def dataset_st(draw):
     classname = draw(classname_st())
     ndims = draw(st.integers(min_value=1, max_value=3))
     shape = tuple(draw(st.integers(min_value=2, max_value=5)) for dim in range(ndims))
-    d = draw(st.dictionaries(min_size=1, keys=varname_st(), values=type_and_value_st(False)))
+    d = draw(st.dictionaries(min_size=0, keys=varname_st(), values=type_and_value_st(False)))
     dtype = types.new_class(classname, (H5Dataset,), kwds={"shape": shape, "dtype": H5Integer32})
     value = dtype()
     value.data(numpy.random.randint(-100, 100, size=shape))
