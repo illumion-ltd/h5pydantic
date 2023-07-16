@@ -1,8 +1,9 @@
 from hypothesis import given, strategies as st
 from pydantic import create_model
-from h5pydantic import H5Group, H5Dataset, H5Integer32, H5Integer64
+from h5pydantic import H5Group, H5Dataset, H5DatasetConfig, H5Integer32, H5Integer64
 import numpy
 import string
+import types
 
 def name_str(head_alphabet):
     tail_alphabet = head_alphabet + string.digits + "_"
@@ -12,9 +13,8 @@ def classname_st(): return name_str(string.ascii_uppercase)
 def varname_st(): return name_str(string.ascii_letters)
 
 @st.composite
-def type_and_value_st(draw):
-    class DummyDataSet(H5Dataset, shape=(2,3), dtype=H5Integer32): pass
-    dtype = draw(st.sampled_from([H5Integer32, H5Integer64, float, str, H5Dataset, H5Group]))
+def type_and_value_st(draw, dataset: bool = True):
+    dtype = draw(st.sampled_from([H5Integer32, H5Integer64, float, str] + [H5Dataset, H5Group] * dataset))
     if dtype is H5Integer32:
         strat = st.integers(min_value=H5Integer32.ge, max_value=H5Integer32.le)
     elif dtype is H5Integer64:
@@ -24,13 +24,22 @@ def type_and_value_st(draw):
     elif dtype is str:
         strat = st.text(string.printable)
     elif dtype is H5Dataset:
-        dataset = DummyDataSet()
-        dataset.data(numpy.random.randint(-100, 100, size=dataset._h5config.shape))
-        return (DummyDataSet, dataset)
+        return draw(dataset_st())
     elif dtype is H5Group:
         group = draw(st.deferred(lambda: group_st()))
         return (group, group())
     return (dtype, draw(strat))
+
+@st.composite
+def dataset_st(draw):
+    classname = draw(classname_st())
+    ndims = draw(st.integers(min_value=1, max_value=3))
+    shape = tuple(draw(st.integers(min_value=2, max_value=5)) for dim in range(ndims))
+    d = draw(st.dictionaries(min_size=1, keys=varname_st(), values=type_and_value_st(False)))
+    dtype = types.new_class(classname, (H5Dataset,), kwds={"shape": shape, "dtype": H5Integer32})
+    value = dtype()
+    value.data(numpy.random.randint(-100, 100, size=shape))
+    return (dtype, value)
 
 @st.composite
 def group_st(draw):
