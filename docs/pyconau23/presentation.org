@@ -1,0 +1,12 @@
+#+AUTHOR: Clinton Roy
+#+EMAIL: clintonr@ansto.gov.au
+#+TITLE: h5pydantic, from a Synchrotron through Python to HDF5
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [aspectratio=169,gray]
+#+BEAMER_HEADER: \institute[ANSTO]{ANSTO\\Australian Synchrotron}
+#+DATE: PyCon AU
+
+* synchrotron
+* HDF5
+* Pydantic
+* h5pydantic
