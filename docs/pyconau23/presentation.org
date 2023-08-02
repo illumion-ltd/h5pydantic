@@ -4,9 +4,17 @@
 #+LaTeX_CLASS: beamer
 #+LaTeX_CLASS_OPTIONS: [aspectratio=169,gray]
 #+BEAMER_HEADER: \institute[ANSTO]{ANSTO\\Australian Synchrotron}
-#+DATE: PyCon AU
+#+DATE: PyCon AU 2023
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_COMPILER: xelatex
+\setmainfont{BerkeleyMono-Regular.otf}
 
 * synchrotron
 * HDF5
 * Pydantic
 * h5pydantic
+* TODO
+* weird whacky things about hdf5
+ * does not have a date/time type
+  * well it does, but it's deprecated for being wrong
+ * pint, uncertainties
