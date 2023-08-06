@@ -37,8 +37,8 @@ Now, lets take some experimental measurements:
   :pyobject: Acquisition
 
 H5Datasets map directly to HDF5 datasets, which can have a lot of
-options, h5pydantic supports these through attributes that end with
-underscores. We've added a per acquisition metadata "beamstop" to the
+options, h5pydantic supports these through extra arguments passed to
+the class. We've added a per acquisition metadata "beamstop" to the
 acquisition. 
 
 We now have all the bits and pieces to create our entire experiment:
@@ -46,7 +46,9 @@ We now have all the bits and pieces to create our entire experiment:
 .. literalinclude:: src/model.py
   :pyobject: Experiment
 
-which introduces our first container type, a list of Acquisitions.
+which introduces our first container type, a list of Acquisitions;
+which gets mapped to hdf5 groups indexed by number e.g. /data/0,
+data/1 etc.
 
 Using the Model
 ---------------
