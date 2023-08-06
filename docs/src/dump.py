@@ -1,16 +1,17 @@
-from model import Experiment, Acquisition
+from model import Experiment, Acquisition, Baseline, Metadata
 
 import numpy
 from pathlib import Path
 
-shape = (3, 5)
+experiment = Experiment(metadata=Metadata(start=Baseline(temperature=25.0, humidity=0.4),
+                                          end=Baseline(temperature=26.0, humidity=0.4)))
 
-experiment = Experiment(metadata={"start": {"temperature": 25.0, "humidity": 0.4},
-                                  "end": {"temperature": 26.0, "humidity": 0.4}},
-                        data=[])
+acq = Acquisition(beamstop=11)
+acq.data(numpy.random.randint(255, size=Acquisition._h5config.shape))
+experiment.data.append(acq)
 
-experiment.data.append(Acquisition(data_=numpy.random.randint(255, size=shape), beamstop=10))
-experiment.data.append(Acquisition(data_=numpy.random.randint(255, size=shape), beamstop=11))
-experiment.data.append(Acquisition(data_=numpy.random.randint(255, size=shape), beamstop=12))
+acq = Acquisition(beamstop=12)
+acq.data(numpy.random.randint(255, size=Acquisition._h5config.shape))
+experiment.data.append(acq)
 
 experiment.dump(Path("experiment.hdf"))
