@@ -10,6 +10,19 @@
 \setmainfont{BerkeleyMono-Regular.otf}
 
 * synchrotron
+ * lots of sensors
+ * lots of data
+* HDF files
+ * One file, with structure
+ * Can think of it like a zip file
+ * Has groups, which are basically directories/folders
+ * Has datasets, which are arrays
+ * Has key/value metadata, which can be tagged
+* Users ideally want to take away one file
+* Worked with one of the beamline scientists to lay out the format of the of the experiment file 
+* Ended up with  wall of text that described the layout
+* But still no code
+* Had the idea of creating an ORM type library but it targets HDF rather than 
 * HDF5
 * Pydantic
 * h5pydantic
@@ -18,3 +31,5 @@
  * does not have a date/time type
   * well it does, but it's deprecated for being wrong
  * pint, uncertainties
+* automatic docs
+** 
