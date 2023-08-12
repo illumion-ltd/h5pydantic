@@ -4,32 +4,69 @@
 #+LaTeX_CLASS: beamer
 #+LaTeX_CLASS_OPTIONS: [aspectratio=169,gray]
 #+BEAMER_HEADER: \institute[ANSTO]{ANSTO\\Australian Synchrotron}
+#+BEAMER_HEADER:\logo{\begin{tikzpicture}[remember picture, overlay,anchor=south east]\node at (current page.south east){\includegraphics[height=.8cm]{ANSTO.jpg}};\end{tikzpicture}}
+#+BEAMER_HEADER: \setbeamertemplate{navigation symbols}{}
 #+DATE: PyCon AU 2023
 #+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \usepackage{tikz}
 #+LATEX_COMPILER: xelatex
+#+OPTIONS: H:2
+
 \setmainfont{BerkeleyMono-Regular.otf}
 
-* synchrotron
- * lots of sensors
- * lots of data
-* HDF files
- * One file, with structure
- * Can think of it like a zip file
- * Has groups, which are basically directories/folders
- * Has datasets, which are arrays
- * Has key/value metadata, which can be tagged
-* Users ideally want to take away one file
-* Worked with one of the beamline scientists to lay out the format of the of the experiment file 
-* Ended up with  wall of text that described the layout
-* But still no code
-* Had the idea of creating an ORM type library but it targets HDF rather than 
+* Synchrotron
+
+** Synchrotron
+ [[./synch_aerial.jpg]]
+
+** Synchrotron
+ * TODO put the inside diagram from the corp slide deck here
+
+** Lots of [meta]data
+ * sample information
+  * chemistry, volume, concentration, thickness
+  * strain, temperature, shearing, magnetic, UV light, chemical, pressure
+ * x-ray beam setup
+  * energy 
+  * distance between sample and detector
+  * xray detector images
+  * detector exposure time
+ * calibration
+  * detector images with no beam
+  * detector images with beam, but no sample
+  * position of beam on detector
+ * processing arguments
+  * different statistical methods and arguments
+  * different assumptions
+
 * HDF5
-* Pydantic
-* h5pydantic
-* TODO
-* weird whacky things about hdf5
+
+** HDF files
+ * One file, with internal structure
+ * (kinda) archive file, think tar/zip
+ * Groups 
+   * which are basically directories/folders
+ * Has datasets, which are arrays
+  * 2d arrays commonly used to store images
+ * Has key/value metadata
+ * COMES from AHEWEHOO
+ * Users ideally want to take away one file
+ * Worked with one of the beamline scientists to lay out the format of the of the experiment file 
+ * Ended up with  wall of text that described the layout
+ * But still no code
+ * Had the idea of creating an ORM type library but it targets HDF rather than 
+  * HDF5
+ * Pydantic
+ * h5pydantic
+ * TODO
+** weird whacky things about hdf5
  * does not have a date/time type
   * well it does, but it's deprecated for being wrong
  * pint, uncertainties
-* automatic docs
-** 
+ * automatic docs
+
+* h5pydantic
+
+ ** A slide describing h5py and pydantic
+  
+
