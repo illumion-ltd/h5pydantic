@@ -102,7 +102,40 @@ position.attrs["x"] = 247
 position.attrs["y"] = 253
 #+END_SRC
 
+** Introducing Pydantic 
+ * Groups - Model
+ * Dataset - Model
+ * Attributes - fields of Groups/Datasets
+
 ** Example code using h5pydantic
+#+BEGIN_SRC python :tangle model.py
+from h5pydantic import H5Group, H5Dataset, H5Integer32
+
+class Position(H5Group):
+    x: H5Integer32
+    y: H5Integer32
+
+class CalibImage(H5Dataset, dtype=H5Integer32, shape=(3,2)):
+    pass
+
+class Calibration(H5Group):
+  no_beam: CalibImage = CalibImage()
+  position: Position
+
+class Experiment(H5Group):
+    calibration: Calibration
+#+END_SRC
+
+** Using the Model
+#+BEGIN_SRC python :tangle use_model.py
+from model import Experiment, Calibration, CalibImage, Position
+
+exp = Experiment(calibration=Calibration(position=Position(x=247, y=253)))
+exp.calibration.no_beam.write([0, 0, 1, 0, 0])
+exp.dump("experiment.hdf5")
+
+#+END_SRC
+
 
 ** Extra examples showing
  * Units
@@ -177,7 +210,7 @@ position.attrs["y"] = 253
  * Catch errors before attempting to save
  * Match all data against specification
  * show hypothesis testing
-
+ * show h5pydantic is : dataset, group, types
 # Local Variables:
 # org-src-preserve-indentation: t
 # End:
