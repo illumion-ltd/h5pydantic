@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "pyconau23"
+version = "0.1.0"
+description = ""
+authors = ["Clinton Roy <clintonr@ansto.gov.au>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+h5py = "^3.9.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
