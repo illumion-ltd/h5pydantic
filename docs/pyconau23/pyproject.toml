@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.11"
 h5py = "^3.9.0"
 h5pydantic = {git = "https://gitlab.com/clinton.roy/h5pydantic.git"}
+pint = "^0.22"
 
 
 [build-system]
