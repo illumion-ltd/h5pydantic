@@ -1,0 +1,197 @@
+#+AUTHOR: Clinton Roy
+#+EMAIL: clintonr@ansto.gov.au
+#+TITLE: h5pydantic, from a Synchrotron through Python to HDF5
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [aspectratio=169,gray]
+#+BEAMER_HEADER: \institute[ANSTO]{ANSTO\\Australian Synchrotron}
+#+BEAMER_HEADER:\logo{\begin{tikzpicture}[remember picture, overlay,anchor=south east]\node at (current page.south east){\includegraphics[height=.8cm]{ANSTO.jpg}};\end{tikzpicture}}
+#+BEAMER_HEADER:\setbeamertemplate{navigation symbols}{}
+
+#+BEAMER_HEADER: \setbeamertemplate{frametitle}{\nointerlineskip  
+#+BEAMER_HEADER:    \begin{beamercolorbox}[wd=\paperwidth,ht=2.75ex,dp=1.375ex]{frametitle}
+#+BEAMER_HEADER:        \hspace*{2ex}\insertframetitle \hfill {\tiny\insertframenumber} \hspace*{1ex}%
+#+BEAMER_HEADER:    \end{beamercolorbox}}
+#+DATE: PyCon AU 2023
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \usepackage{amsmath}
+#+LATEX_HEADER: \usepackage{geometry}
+#+LATEX_HEADER: \usepackage{tikz}
+#+LATEX_COMPILER: xelatex
+#+OPTIONS: H:2
+
+\setmainfont{BerkeleyMono-Regular.otf}
+
+* Synchrotron
+
+** Synchrotron
+\begin{tikzpicture}[remember picture, overlay]
+ \node at (current page.center){\includegraphics[width=\paperwidth]{Synch_aerial.pdf}};
+\end{tikzpicture}
+
+** Synchrotron
+\begin{tikzpicture}[remember picture, overlay]
+ \node at (current page.center){\includegraphics[width=\paperwidth]{Synch_inside.pdf}};
+\end{tikzpicture}
+
+** Lots of [meta]data
+ * sample information
+  * chemistry, volume, concentration, thickness
+  * strain, temperature, shearing, magnetic, UV light, chemical, pressure
+\pause
+ * x-ray beam setup
+  * energy 
+  * distance between sample and detector
+  * xray detector images
+  * detector exposure time
+\pause
+ * calibration
+  * detector images with no beam
+  * detector images with beam, but no sample
+  * position of beam on detector
+\pause
+ * processing arguments
+  * different statistical methods and arguments
+  * different assumptions
+
+* HDF5
+
+** What Users and Scientists want
+ * All the data and metadata together
+ * Ideally in one file
+
+
+** HDF5 Files
+ * One file, with internal structure
+ * Archive file, think tar/zip
+
+** HDF5 Core Concepts
+#+BEAMER: \pause
+ 1. Groups 
+   * which are basically directories/folders \pause
+ 1. Datasets 
+  * multi dimensional arrays
+  * 2D arrays commonly used to store images \pause
+ 1. Attributes
+  * key, value metadata
+  * can attach to Groups and Datasets
+
+** Hand written, hand wavy hdf5 contents
+#+BEGIN_SRC
+/sample
+/sample/thickness = 2.5
+/sample/concentration = 3.0
+/beam
+/beam/energy = 1.8
+/beam/distance = 7.8
+/calibration
+/calibration/no_beam = [0 0 0 0 1 0 0 1 0 ...]
+/calibration/position/x = 247
+/calibration/position/y = 253
+/processing
+/processing/threshold = 25
+#+END_SRC
+
+** Hand written calibration
+#+BEGIN_SRC python :tangle h5py_calibration.py
+import h5py
+
+h5file = h5py.File("experiment.hdf5", "w")
+
+calibration_group = h5file.create_group("calibration")
+
+dataset = calibration_group.create_dataset("no_beam", 
+                                           [0, 0, 0, 1, 0, 0])
+
+position = calibration_group.create_group("position")
+position.attrs["x"] = 247
+position.attrs["y"] = 253
+#+END_SRC
+
+* Pydantic
+
+** Introducing Pydantic 
+ * Groups - Model
+ * Dataset - Model
+ * Attributes - fields of Groups/Datasets
+
+** Defining the model with h5pydantic
+#+BEGIN_SRC python :tangle model.py
+from h5pydantic import H5Group, H5Dataset, H5Integer32
+
+class Position(H5Group):
+    x: H5Integer32
+    y: H5Integer32
+
+class CalibImage(H5Dataset, dtype=H5Integer32, shape=(3,2)):
+    pass
+
+class Calibration(H5Group):
+  no_beam: CalibImage = CalibImage()
+  position: Position
+
+class Experiment(H5Group):
+    calibration: Calibration
+#+END_SRC
+
+** Using the Model
+#+BEGIN_SRC python :tangle use_model.py
+from model import Experiment
+
+exp = Experiment(calibration={"position": {"x": 247, "y": 253}})
+exp.calibration.no_beam.data([[0, 0, 1], [0, 0, 0]])
+exp.dump("experiment.hdf5")
+
+#+END_SRC
+
+** Pydantic Fields
+ * Can extend pydantic fields with all sorts of information
+  * Documentation
+  * Units
+  * Relationships between fields
+
+** Pydantic Fields example
+
+#+BEGIN_SRC python :tangle beam_extended.py
+from h5pydantic import H5Group, H5Integer32
+from pydantic import Field
+
+import pint
+ureg = pint.UnitRegistry()
+
+class Beam(H5Group):
+    energy: float = Field(ge=0, doc="X-Ray beam energy", unit=ureg.joule)
+    distance: H5Integer32 = Field(ge=0, 
+                                  doc="Distance from sample to detector", 
+                                  unit=ureg.millimeter)
+
+beam = Beam(energy=3.4, distance=7500)
+#+END_SRC
+
+** Outputs
+ * Can output a HDF5 description in PDF, using Sphinx
+ * Can start to handle versioning
+
+
+** Design
+The overall design of =h5pydantic= has three main aims:
+ 1. All instantiated models can be saved to HDF5 files
+ 1. All HDF5 features can be used.
+ 2. All Pydantic features can be used.
+
+** 
+\begin{center}
+\Huge Questions?
+\end{center}
+
+** Thank Yous
+ * Thank you to the scientists that have test driven the library:\\
+   Dr Lester Barnsley
+ * Thank you to all the members of the Scientific Computing team and
+   other Scientists
+   for feedback on the library and this presentation
+
+
+
+# Local Variables:
+# org-src-preserve-indentation: t
+# End:
