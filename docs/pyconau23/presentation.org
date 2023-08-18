@@ -107,9 +107,9 @@ position.attrs["x"] = 247
 position.attrs["y"] = 253
 #+END_SRC
 
-* Pydantic
+* =h5pydantic=
 
-** Introducing Pydantic 
+** Introducing =h5pydantic=
  * Groups - Model
  * Dataset - Model
  * Attributes - fields of Groups/Datasets
@@ -134,13 +134,21 @@ class Experiment(H5Group):
 #+END_SRC
 
 ** Using the Model
-#+BEGIN_SRC python :tangle use_model.py
+#+BEGIN_SRC python :tangle model_dump.py
 from model import Experiment
 
 exp = Experiment(calibration={"position": {"x": 247, "y": 253}})
 exp.calibration.no_beam.data([[0, 0, 1], [0, 0, 0]])
 exp.dump("experiment.hdf5")
+#+END_SRC
 
+And later on...
+
+#+BEGIN_SRC python :tangle model_load.py
+from model import Experiment
+
+exp = Experiment.load("experiment.hdf5")
+(x, y) = exp.calibration.position.x, exp.calibration.position.y
 #+END_SRC
 
 ** Pydantic Fields
