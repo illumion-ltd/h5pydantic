@@ -1,5 +1,6 @@
 import h5py
 from pydantic import BaseModel, PrivateAttr, StrictInt
+
 import numpy
 
 from abc import ABC, abstractmethod
@@ -24,8 +25,12 @@ class _H5Base(BaseModel):
     def __init_subclass__(self, **data: Any):
         for key, field in self.__fields__.items():
             if isinstance(field.outer_type_, types.GenericAlias):
+
                 if get_origin(field.outer_type_) != list:
                     raise ValueError(f"h5pydantic only handles list containers, not '{get_origin(field.outer_type_)}'")
+
+                if issubclass(field.type_, Enum):
+                    raise ValueError(f"h5pydantic does not handle lists of enums")
 
                 if issubclass(field.type_, Enum):
                     raise ValueError(f"h5pydantic does not handle lists of enums")
@@ -90,6 +95,7 @@ class _H5Base(BaseModel):
         d = cls._load_intrinsic(h5file, prefix)
         d.update(cls._load_children(h5file, prefix))
         ret = cls.parse_obj(d)
+
         # FIXME awful hack, _data isn't being loaded by parse_obj for some reason
         if "_data" in d:
             ret._data = d["_data"]
@@ -135,6 +141,8 @@ class H5Dataset(_H5Base):
             return self._h5config.dtype
 
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
+        print("dataset dump container", self)
+
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
 

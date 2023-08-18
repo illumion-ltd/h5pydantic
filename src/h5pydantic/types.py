@@ -21,7 +21,7 @@ class H5Integer64(int, H5Type):
     numpy = numpy.int64
 
 
-class H5Integer32(int, H5Type):
+class H5Integer32(StrictInt, H5Type):
     """Signed Integers, using 32 bits."""
 
     ge = -2**31
