@@ -55,7 +55,7 @@ class _H5Base(BaseModel):
 
             else:
                 try:
-                    container.attrs[key] = getattr(self, key)
+                    container.attrs.create(key, getattr(self, key), dtype=field.type_.h5pyid)
                 except Exception as e:
                     raise ValueError(f"While attempting to save attribute ``{key}`` = ``{getattr(self, key)}``, the following error occured") from e
 
@@ -141,8 +141,6 @@ class H5Dataset(_H5Base):
             return self._h5config.dtype
 
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
-        print("dataset dump container", self)
-
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
 
