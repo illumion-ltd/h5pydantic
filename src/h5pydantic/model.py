@@ -13,7 +13,7 @@ from typing import Any, Union
 from typing_extensions import Self, Type
 
 from .enum import H5Enum
-from .types import H5Type, _hdfstrtoh5type
+from .types import H5Type, _hdfstrtoh5type, _pytype_to_h5type
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
 
@@ -28,9 +28,6 @@ class _H5Base(BaseModel):
 
                 if get_origin(field.outer_type_) != list:
                     raise ValueError(f"h5pydantic only handles list containers, not '{get_origin(field.outer_type_)}'")
-
-                if issubclass(field.type_, Enum):
-                    raise ValueError(f"h5pydantic does not handle lists of enums")
 
                 if issubclass(field.type_, Enum):
                     raise ValueError(f"h5pydantic does not handle lists of enums")
@@ -54,10 +51,11 @@ class _H5Base(BaseModel):
                 value._dump(h5file, prefix / key)
 
             else:
-                try:
-                    container.attrs.create(key, getattr(self, key), dtype=field.type_.h5pyid)
-                except Exception as e:
-                    raise ValueError(f"While attempting to save attribute ``{key}`` = ``{getattr(self, key)}``, the following error occured") from e
+                # FIXME should handle shape here. (i.e. datasets)
+                dtype=_pytype_to_h5type(field.type_)
+                print("existing attrs", list(container.attrs))
+                # FIXME set the type explicitly
+                container.attrs.create(key, getattr(self, key)) #  dtype=_pytype_to_h5type(field.type_))
 
     def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
         container = self._dump_container(h5file, prefix)
