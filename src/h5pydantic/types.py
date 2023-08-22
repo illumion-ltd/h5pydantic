@@ -21,13 +21,28 @@ class H5Integer64(int, H5Type):
     numpy = numpy.int64
 
 
-class H5Integer32(StrictInt, H5Type):
+class H5Integer32(int, H5Type):
     """Signed Integers, using 32 bits."""
 
     ge = -2**31
     le = 2**31 - 1
     h5pyid = h5py.h5t.NATIVE_INT32
     numpy = numpy.int32
+
+
+def _pytype_to_h5type(pytype: H5Type|str|float) -> str:
+    """Maps from the Python type to the h5py type."""
+    if issubclass(pytype, H5Type):
+        return pytype.h5pyid
+
+    elif pytype is str:
+        return numpy.dtype("str")
+
+    elif pytype in [float]:
+        return pytype
+
+    else:
+        raise ValueError(f"Unknown type: {pytype}")
 
 
 def _hdfstrtoh5type(hdfdtype: str) -> H5Type|float:
