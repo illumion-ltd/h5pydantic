@@ -33,7 +33,7 @@ class H5Integer32(int, H5Type):
     numpy = numpy.int32
 
 
-def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> str:
+def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> Union[Type[str],Type[float],Type[numpy.dtype]]:
     """Maps from the Python type to the h5py type."""
     if issubclass(pytype, H5Type):
         return pytype.h5pyid

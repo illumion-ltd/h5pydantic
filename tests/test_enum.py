@@ -1,5 +1,4 @@
-from h5pydantic import H5Dataset, H5Group, H5Integer64
-from enum import IntEnum, unique
+from h5pydantic import H5Dataset, H5Group, H5Integer64, H5IntEnum
 
 import numpy as np
 
@@ -18,14 +17,12 @@ import pytest
 # FIXME test that all values fit inside the base datatype
 # FIXME test that the loaded underlying datatype is the same as that written out
 
-class ScanningMode(IntEnum):
+
+class ScanningMode(H5IntEnum, dtype=H5Integer64):
     INSTANTANEOUS = 1
     STEPANDSHOOT = 2
     FLYSCAN = 3
 
-    @classmethod
-    def dtype(cls):
-        return H5Integer64
 
 @pytest.mark.parametrize("mode", ScanningMode.__members__.values())
 def test_enum_works(hdf_path, mode):
@@ -45,10 +42,6 @@ def test_list_enum_fails(hdf_path):
         class Experiment(H5Group):
             modes: list[ScanningMode]
 
-
-from enum import Enum
-from typing import Type
-
 def test_dataset_enum_works(hdf_path):
     class DatasetModes(H5Dataset, shape=(3,), dtype=ScanningMode):
         pass
@@ -64,6 +57,4 @@ def test_dataset_enum_works(hdf_path):
     exp.dump(hdf_path)
 
     with Experiment.load(hdf_path) as loaded:
-        print("exp", exp.modes._data)
-        print("loaded", loaded.modes._data)
         assert exp == loaded

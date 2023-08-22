@@ -5,7 +5,7 @@ import h5py.h5t
 
 import pydantic.fields
 
-from enum import Enum
+from enum import Enum, IntEnum
 
 class H5Enum(int, Enum):
     @classmethod
@@ -20,3 +20,13 @@ class H5Enum(int, Enum):
     @classmethod
     def _load(cls, h5file: h5py.File, prefix: PurePosixPath, key: str, field: pydantic.fields.ModelField):
         return field.type_(h5file[str(prefix)].attrs[key])
+
+
+class H5IntEnum(IntEnum):
+    """Wraps the HDF5 Integer Enum Type.
+
+    The dtype class keywoard argument is mandatory.
+    """
+    def __init_subclass__(self, **kwds):
+        # FIXME raise a nice alert if dtype kwarg is missing.
+        self.__class__.dtype = lambda x: kwds["dtype"]
