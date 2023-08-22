@@ -4,6 +4,8 @@ import h5py.h5t
 
 import numpy
 
+from typing import Union
+
 
 class H5Type():
     """All subclasses must be able to save all their possible values to HDF5 without error."""
@@ -30,7 +32,7 @@ class H5Integer32(int, H5Type):
     numpy = numpy.int32
 
 
-def _pytype_to_h5type(pytype: H5Type|str|float) -> str:
+def _pytype_to_h5type(pytype: Union[H5Type,str,float]) -> str:
     """Maps from the Python type to the h5py type."""
     if issubclass(pytype, H5Type):
         return pytype.h5pyid
@@ -45,7 +47,7 @@ def _pytype_to_h5type(pytype: H5Type|str|float) -> str:
         raise ValueError(f"Unknown type: {pytype}")
 
 
-def _hdfstrtoh5type(hdfdtype: str) -> H5Type|float:
+def _hdfstrtoh5type(hdfdtype: str) -> Union[H5Type,float]:
     # FIXME this should be a registered look up table or something more automatic
     if hdfdtype == "int32":
         return H5Integer32

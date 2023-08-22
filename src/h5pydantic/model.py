@@ -105,7 +105,7 @@ class H5DatasetConfig(BaseModel):
     """All of the dataset configuration options."""
     # FIXME There are a *lot* of dataset features to be supported as optional flags, compression, chunking etc.
     shape: tuple[StrictInt, ...]
-    dtype: float|Type[H5Type]|Type[Enum]
+    dtype: Union[float,Type[H5Type],Type[Enum]]
 
 
 class H5Dataset(_H5Base):
