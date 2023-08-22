@@ -1,4 +1,4 @@
-from h5pydantic.types import H5Integer64, _hdfstrtoh5type
+from h5pydantic.types import H5Integer32, H5Integer64, _hdfstrtoh5type, _pytype_to_h5type
 
 import h5py
 
@@ -40,3 +40,18 @@ def test_outside_integer_maximum_fails(tmp_path):
 def test_unknown_hdf_data_type_fails():
     with pytest.raises(ValueError, match="nosuchtype"):
         _hdfstrtoh5type("nosuchtype")
+
+@pytest.mark.parametrize("pytype,h5type",
+                         [(H5Integer32, h5py.h5t.NATIVE_INT32),
+                          (H5Integer64, h5py.h5t.NATIVE_INT64),
+                          (str, str),
+                          (float, float)])
+def test_known_types(pytype, h5type):
+    h5 = _pytype_to_h5type(pytype)
+
+    assert h5type == h5
+
+
+def test_unknown_pytypes():
+    with pytest.raises(ValueError):
+        _pytype_to_h5type(tuple)
