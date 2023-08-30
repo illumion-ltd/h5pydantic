@@ -1,4 +1,4 @@
-from h5pydantic import H5Group, H5Dataset, H5Integer32
+from h5pydantic import H5Group, H5Dataset, H5Int32
 import h5py
 
 import numpy as np
@@ -99,7 +99,7 @@ def test_enumerate(tmp_path):
 def test_dataset(hdf_path):
     IMAGE_SHAPE = (3, 5)
 
-    class AreaDetectorImage(H5Dataset, shape=IMAGE_SHAPE, dtype=H5Integer32):
+    class AreaDetectorImage(H5Dataset, shape=IMAGE_SHAPE, dtype=H5Int32):
         pass
 
     class Experiment(H5Group):

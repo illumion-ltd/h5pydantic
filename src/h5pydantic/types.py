@@ -15,7 +15,7 @@ class H5Type():
 # FIXME add other types, add tests for ge/le for them as well.
 # FIXME add a validator, for ints not to accept float
 
-class H5Integer64(int, H5Type):
+class H5Int64(int, H5Type):
     """Signed Integers, using 64 bits."""
 
     ge = -2**63
@@ -24,7 +24,7 @@ class H5Integer64(int, H5Type):
     numpy = numpy.int64
 
 
-class H5Integer32(int, H5Type):
+class H5Int32(int, H5Type):
     """Signed Integers, using 32 bits."""
 
     ge = -2**31
@@ -51,8 +51,8 @@ def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> Unio
 def _hdfstrtoh5type(hdfdtype: str) -> Union[Type[H5Type],Type[float]]:
     # FIXME this should be a registered look up table or something more automatic
     if hdfdtype == "int32":
-        return H5Integer32
+        return H5Int32
     elif hdfdtype == "int64":
-        return H5Integer64
+        return H5Int64
     else:
         raise ValueError(f"Unknown hdf5 data dtype string '{hdfdtype}'")

@@ -1,4 +1,4 @@
-from h5pydantic import H5Dataset, H5Group, H5Integer64
+from h5pydantic import H5Dataset, H5Group, H5Int64
 
 
 class Baseline(H5Group):
@@ -11,7 +11,7 @@ class Metadata(H5Group):
     end: Baseline
 
 
-class Acquisition(H5Dataset, shape=(3,5), dtype=H5Integer64):
+class Acquisition(H5Dataset, shape=(3,5), dtype=H5Int64):
     beamstop: int
 
 
