@@ -108,14 +108,10 @@ class Experiment(H5Group):
     calibration: Calibration
 #+END_SRC
 
-** Thank Yous
- * Thank you to the scientists that have test driven the library:\\
-   Dr Lester Barnsley
- * Thank you to all the members of the Scientific Computing team and
-   other Scientists
-   for feedback on the library and this presentation
-
-
+** Full Version: PyCon Australia 2023
+\begin{tikzpicture}[remember picture, overlay]
+ \node at (current page.center){\includegraphics[width=0.8\paperwidth]{pyconau23.png}};
+\end{tikzpicture}
 
 # Local Variables:
 # org-src-preserve-indentation: t
