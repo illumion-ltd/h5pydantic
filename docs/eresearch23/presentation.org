@@ -1,0 +1,122 @@
+#+AUTHOR: Clinton Roy
+#+EMAIL: clintonr@ansto.gov.au
+#+TITLE: h5pydantic, from a Synchrotron through Python to HDF5
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [aspectratio=169,gray]
+#+BEAMER_HEADER: \institute[ANSTO]{ANSTO\\Australian Synchrotron}
+#+BEAMER_HEADER:\logo{\begin{tikzpicture}[remember picture, overlay,anchor=south east]\node at (current page.south east){\includegraphics[height=.8cm]{ANSTO.jpg}};\end{tikzpicture}}
+#+BEAMER_HEADER:\setbeamertemplate{navigation symbols}{}
+
+#+BEAMER_HEADER: \setbeamertemplate{frametitle}{\nointerlineskip  
+#+BEAMER_HEADER:    \begin{beamercolorbox}[wd=\paperwidth,ht=2.75ex,dp=1.375ex]{frametitle}
+#+BEAMER_HEADER:        \hspace*{2ex}\insertframetitle \hfill {\tiny\insertframenumber} \hspace*{1ex}%
+#+BEAMER_HEADER:    \end{beamercolorbox}}
+#+DATE: eResearch Australasia 2023
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \usepackage{amsmath}
+#+LATEX_HEADER: \usepackage{geometry}
+#+LATEX_HEADER: \usepackage{tikz}
+#+LATEX_COMPILER: xelatex
+#+OPTIONS: H:2 toc:nil
+
+* Synchrotron
+* Lots of data per experiment
+* hdf5 is a flexible file format
+* h5pydantic is like an Object Relation Mapper, but to hdf5
+* Becomes an API for my scientists to use, instead of reaching out to me
+
+* Synchrotron
+
+** Synchrotron
+\begin{tikzpicture}[remember picture, overlay]
+ \node at (current page.center){\includegraphics[width=\paperwidth]{Synch_aerial.pdf}};
+\end{tikzpicture}
+
+** Synchrotron
+\begin{tikzpicture}[remember picture, overlay]
+ \node at (current page.center){\includegraphics[width=\paperwidth]{Synch_inside.pdf}};
+\end{tikzpicture}
+
+** Lots of [meta]data
+Lots of ...
+#+ATTR_BEAMER: :overlay <+->
+ * setup details
+ * calibration data
+ * experiment results
+
+\begin{tikzpicture}[remember picture, overlay]
+ \node[anchor=east] at (current page.east){\includegraphics[width=6.3cm]{detector.png}};
+\end{tikzpicture}
+
+\pause
+ Users want all this data in one file
+
+** HDF5 Files
+ * One file, with internal structure
+ * Archive file, think tar/zip
+
+** HDF5 Core Concepts - \copy NEOM
+\begin{tikzpicture}[remember picture, overlay]
+ \node at (current page.center){\includegraphics[width=0.79\paperwidth]{hdf5_structure4.jpg}};
+\end{tikzpicture}
+
+** Hand Wavy HDF5 Contents
+#+BEGIN_SRC
+/sample
+/sample/thickness = 2.5
+/sample/concentration = 3.0
+/beam
+/beam/energy = 1.8
+/beam/distance = 7.8
+/calibration
+/calibration/no_beam = [0 0 0 0 1 0 0 1 0 ...]
+/calibration/position/x = 247
+/calibration/position/y = 253
+/processing
+/processing/threshold = 25
+#+END_SRC
+
+* =h5pydantic=
+
+** Introducing =h5pydantic=
+ * Groups - Model
+ * Dataset - Model
+ * Attributes - fields of Groups/Datasets
+
+\pause
+The =h5pydantic= library handles reading and writing to HDF5
+
+\pause
+Scientists can store more data without needing my help
+
+** Defining the model with h5pydantic
+#+BEGIN_SRC python :tangle model.py
+from h5pydantic import H5Group, H5Dataset, H5Integer32
+
+class Position(H5Group):
+    x: H5Integer32
+    y: H5Integer32
+
+class CalibImage(H5Dataset, dtype=H5Integer32, shape=(3,2)):
+    pass
+
+class Calibration(H5Group):
+  no_beam: CalibImage = CalibImage()
+  position: Position
+
+class Experiment(H5Group):
+    calibration: Calibration
+#+END_SRC
+
+** Thank Yous
+ * Thank you to the scientists that have test driven the library:\\
+   Dr Lester Barnsley
+ * Thank you to all the members of the Scientific Computing team and
+   other Scientists
+   for feedback on the library and this presentation
+
+
+
+# Local Variables:
+# org-src-preserve-indentation: t
+# End:
