@@ -53,7 +53,6 @@ class _H5Base(BaseModel):
             else:
                 # FIXME should handle shape here. (i.e. datasets)
                 dtype=_pytype_to_h5type(field.type_)
-                print("existing attrs", list(container.attrs))
                 # FIXME set the type explicitly
                 container.attrs.create(key, getattr(self, key)) #  dtype=_pytype_to_h5type(field.type_))
 
@@ -105,7 +104,7 @@ class H5DatasetConfig(BaseModel):
     """All of the dataset configuration options."""
     # FIXME There are a *lot* of dataset features to be supported as optional flags, compression, chunking etc.
     shape: tuple[StrictInt, ...]
-    dtype: Union[Type[float],Type[H5Type],Type[Enum]]
+    dtype: Union[Type[str],Type[float],Type[H5Type],Type[Enum]]
 
 
 class H5Dataset(_H5Base):
@@ -141,8 +140,9 @@ class H5Dataset(_H5Base):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
-
-        dataset = h5file.require_dataset(str(prefix), shape=self._h5config.shape, dtype=self._dtype().numpy, data=self._data)
+        dataset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
+                                         dtype=self._pytype_to_h5type(self._dtype()),
+                                         data=self._data)
         return dataset
 
     @classmethod

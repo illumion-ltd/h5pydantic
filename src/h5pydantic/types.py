@@ -39,7 +39,8 @@ def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> Unio
         return pytype.h5pyid
 
     elif pytype is str:
-        return numpy.dtype("str")
+        # FIXME this lets h5py work out how to store str, which works, but I'm not happy about it.
+        return None
 
     elif pytype in [float]:
         return pytype
