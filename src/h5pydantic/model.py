@@ -141,7 +141,7 @@ class H5Dataset(_H5Base):
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
         dataset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
-                                         dtype=self._pytype_to_h5type(self._dtype()),
+                                         dtype=_pytype_to_h5type(self._dtype()),
                                          data=self._data)
         return dataset
 
