@@ -149,7 +149,7 @@ class H5Dataset(_H5Base):
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
         # Really should be verifying all of the details match the class.
         data = h5file[str(prefix)][()]
-        return {"_config": H5DatasetConfig(shape = data.shape, dtype = _hdfstrtoh5type(data.dtype)), "_data": data}
+        return {"_config": H5DatasetConfig(shape=data.shape, dtype=_hdfstrtoh5type(data.dtype)), "_data": data}
 
     def __eq__(self, other):
         intrinsic = numpy.array_equal(self._data, other._data)
