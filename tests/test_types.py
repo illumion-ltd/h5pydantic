@@ -44,7 +44,7 @@ def test_unknown_hdf_data_type_fails():
 @pytest.mark.parametrize("pytype,h5type",
                          [(H5Int32, h5py.h5t.NATIVE_INT32),
                           (H5Int64, h5py.h5t.NATIVE_INT64),
-                          (str, str),
+                          (str, None),
                           (float, float)])
 def test_known_types(pytype, h5type):
     h5 = _pytype_to_h5type(pytype)
