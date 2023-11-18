@@ -17,10 +17,10 @@ def type_and_value_st(draw, recursive:bool):
     dtype = draw(st.sampled_from([H5Int32, H5Int64, float, str] + [H5Dataset, H5Group] * recursive))
     return {H5Int32: lambda: (dtype, draw(st.integers(min_value=H5Int32.ge, max_value=H5Int32.le))),
             H5Int64: lambda: (dtype, draw(st.integers(min_value=H5Int64.ge, max_value=H5Int64.le))),
-            float:       lambda: (dtype, draw(st.floats(allow_nan=False))),
-            str:         lambda: (dtype, draw(st.text(string.printable))),
-            H5Dataset:   lambda: (draw(dataset_st())),
-            H5Group:     lambda: (draw(group_st())),
+            float: lambda: (dtype, draw(st.floats(allow_nan=False))),
+            str: lambda: (dtype, draw(st.text(string.printable))),
+            H5Dataset: lambda: (draw(dataset_st())),
+            H5Group: lambda: (draw(group_st())),
             }[dtype]()
 
 @st.composite
