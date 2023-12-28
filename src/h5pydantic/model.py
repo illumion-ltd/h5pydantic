@@ -147,8 +147,8 @@ class H5Dataset(_H5Base):
 
     @classmethod
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
-        # Really should be verifying all of the details match the class.
-        data = h5file[str(prefix)][()]
+        # FIXME Really should be verifying all of the details match the class.
+        data = h5file.require_dataset(str(prefix))
         return {"_config": H5DatasetConfig(shape=data.shape, dtype=_hdfstrtoh5type(data.dtype)), "_data": data}
 
     def __eq__(self, other):
