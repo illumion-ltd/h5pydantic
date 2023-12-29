@@ -1,5 +1,8 @@
 from hypothesis import given, strategies as st
+from hypothesis.extra.numpy import arrays as hyp_arrays
+
 from h5pydantic import H5Group, H5Dataset, H5DatasetConfig, H5Int32, H5Int64
+from h5pydantic.types import _pytype_to_h5type
 import numpy, string
 from pydantic import create_model
 
@@ -13,8 +16,8 @@ def varname_st():
     return name_str(string.ascii_letters)
 
 @st.composite
-def type_and_value_st(draw, recursive:bool):
-    dtype = draw(st.sampled_from([H5Int32, H5Int64, float, str] + [H5Dataset, H5Group] * recursive))
+def type_and_value_st(draw, recursive:bool, stringy:bool = True):
+    dtype = draw(st.sampled_from([H5Int32, H5Int64, float] + [str] * stringy + [H5Dataset, H5Group] * recursive))
     return {H5Int32: lambda: (dtype, draw(st.integers(min_value=H5Int32.ge, max_value=H5Int32.le))),
             H5Int64: lambda: (dtype, draw(st.integers(min_value=H5Int64.ge, max_value=H5Int64.le))),
             float: lambda: (dtype, draw(st.floats(allow_nan=False))),
@@ -29,10 +32,12 @@ def dataset_st(draw):
     ndims = draw(st.integers(min_value=1, max_value=3))
     shape = tuple(draw(st.integers(min_value=2, max_value=5)) for dim in range(ndims))
     d = draw(st.dictionaries(min_size=0, keys=varname_st(), values=type_and_value_st(False)))
-    dtype = create_model(classname, __base__=H5Dataset, __cls_kwargs__={"shape": shape, "dtype": H5Int32}, **d)
-    value = dtype()
-    value.data(numpy.random.randint(-100, 100, size=shape))
-    return (dtype, value)
+    array_dtype, _ = draw(type_and_value_st(False, stringy=False))
+    dtype = create_model(classname, __base__=H5Dataset, __cls_kwargs__={"shape": shape, "dtype": array_dtype}, **d)
+    dataset = dtype()
+    value = draw(hyp_arrays(dtype=_pytype_to_h5type(array_dtype), shape=shape))
+    dataset.data(value)
+    return (dtype, dataset)
 
 @st.composite
 def group_st(draw):
@@ -44,6 +49,8 @@ def group_st(draw):
 
 @given(group=group_st())
 def test_roundtrip(group, hdf_path):
+    hdf_path.unlink()
+
     klass, model = group
     model.dump(hdf_path)
     with klass.load(hdf_path) as loaded:
