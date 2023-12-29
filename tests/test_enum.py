@@ -45,11 +45,9 @@ def test_list_enum_fails(hdf_path):
 def test_dataset_enum_works(hdf_path):
     class DatasetModes(H5Dataset, shape=(3,), dtype=ScanningMode):
         pass
-    
+
     class Experiment(H5Group):
         modes = DatasetModes()
-
-    m = DatasetModes()
 
     exp = Experiment(modes=DatasetModes())
     exp.modes.data(np.array([ScanningMode.INSTANTANEOUS, ScanningMode.STEPANDSHOOT, ScanningMode.FLYSCAN]))
