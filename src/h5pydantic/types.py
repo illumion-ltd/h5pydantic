@@ -1,5 +1,7 @@
 from pydantic import StrictInt
 
+from enum import Enum
+
 import h5py.h5t
 
 import numpy
@@ -44,6 +46,9 @@ def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> Unio
 
     elif pytype in [float]:
         return pytype
+
+    elif issubclass(pytype, Enum):
+        return _pytype_to_h5type(pytype.dtype())
 
     else:
         raise ValueError(f"Unknown type: {pytype}")
