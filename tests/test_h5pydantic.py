@@ -18,6 +18,7 @@ def test_empty_hdf5(tmp_path):
     with h5py.File(hdf5_filename, "r") as f:
         assert list(f.keys()) == []
 
+
 def test_attribute(hdf_path):
     print("hdf_path", hdf_path)
 
@@ -32,6 +33,7 @@ def test_attribute(hdf_path):
         assert list(f.keys()) == []
         assert list(f.attrs.keys()) == ["foo"]
         assert f.attrs["foo"] == "bar"
+
 
 def test_missing_attribute(tmp_path):
     class AttributeHDF(H5Group):
