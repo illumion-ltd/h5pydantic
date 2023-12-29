@@ -44,7 +44,7 @@ class _H5Base(BaseModel):
             if get_origin(field.outer_type_) is list:
                 for i, elem in enumerate(value):
                     elem._dump(h5file, prefix / key / str(i))
-            elif issubclass(field.type_, Enum):
+            elif isinstance(value, Enum):
                 H5Enum._dump(h5file, container, key, value.value, field)
 
             elif isinstance(value, _H5Base):
@@ -52,7 +52,7 @@ class _H5Base(BaseModel):
 
             else:
                 # FIXME should handle shape here. (i.e. datasets)
-                dtype=_pytype_to_h5type(field.type_)
+                dtype = _pytype_to_h5type(field.type_)
                 # FIXME set the type explicitly
                 container.attrs.create(key, getattr(self, key)) #  dtype=_pytype_to_h5type(field.type_))
 
@@ -148,8 +148,9 @@ class H5Dataset(_H5Base):
     @classmethod
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
         # FIXME Really should be verifying all of the details match the class.
-        data = h5file.require_dataset(str(prefix))
-        return {"_config": H5DatasetConfig(shape=data.shape, dtype=_hdfstrtoh5type(data.dtype)), "_data": data}
+        # FIXME should probably be doing exact=True here, but need to test what happens
+        data = h5file.require_dataset(str(prefix), cls._h5config.shape, _pytype_to_h5type(cls._h5config.dtype))
+        return {"_data": data}
 
     def __eq__(self, other):
         intrinsic = numpy.array_equal(self._data, other._data)
