@@ -7,6 +7,8 @@ import pydantic.fields
 
 from enum import Enum, IntEnum
 
+# FIXME ideally, I'd get rid of this type completely.
+
 class H5Enum(int, Enum):
     @classmethod
     def _dump(cls, h5file: h5py.File, container, key: str, value: int, fieldtype: pydantic.fields.ModelField):
