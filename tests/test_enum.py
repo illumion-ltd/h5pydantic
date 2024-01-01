@@ -31,16 +31,19 @@ def test_enum_works(hdf_path, mode):
 
     exp = Experiment(mode=mode)
 
-    exp.dump(hdf_path)
+    with exp.dump(hdf_path):
+        pass
 
     with Experiment.load(hdf_path) as imported:
 
         assert exp == imported
 
+
 def test_list_enum_fails(hdf_path):
     with pytest.raises(ValueError, match="h5pydantic does not handle lists of enums"):
         class Experiment(H5Group):
             modes: list[ScanningMode]
+
 
 def test_dataset_enum_works(hdf_path):
     class DatasetModes(H5Dataset, shape=(3,), dtype=ScanningMode):
@@ -50,9 +53,11 @@ def test_dataset_enum_works(hdf_path):
         modes = DatasetModes()
 
     exp = Experiment(modes=DatasetModes())
-    exp.modes.data(np.array([ScanningMode.INSTANTANEOUS, ScanningMode.STEPANDSHOOT, ScanningMode.FLYSCAN]))
 
-    exp.dump(hdf_path)
+    with exp.dump(hdf_path):
+        modes_array = np.array([ScanningMode.INSTANTANEOUS, ScanningMode.STEPANDSHOOT, ScanningMode.FLYSCAN])
+        exp.modes[()] = modes_array
 
     with Experiment.load(hdf_path) as loaded:
         assert exp == loaded
+        assert np.array_equal(modes_array, loaded.modes[()])
