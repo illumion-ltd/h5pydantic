@@ -4,6 +4,7 @@ from pydantic import BaseModel, PrivateAttr, StrictInt
 import numpy
 
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 from enum import Enum
 import types
@@ -93,9 +94,9 @@ class _H5Base(BaseModel):
         d.update(cls._load_children(h5file, prefix))
         ret = cls.parse_obj(d)
 
-        # FIXME awful hack, _data isn't being loaded by parse_obj for some reason
-        if "_data" in d:
-            ret._data = d["_data"]
+        # FIXME awful hack, _dset isn't being loaded by parse_obj for some reason
+        if "_dset" in d:
+            ret._dset = d["_dset"]
 
         return ret
 
@@ -111,7 +112,7 @@ class H5Dataset(_H5Base):
     """A pydantic Basemodel specifying a HDF5 Dataset."""
 
     _h5config: H5DatasetConfig = PrivateAttr()
-    _data: numpy.ndarray = PrivateAttr()
+    _dset: numpy.ndarray = PrivateAttr()
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -123,14 +124,6 @@ class H5Dataset(_H5Base):
 
     # FIXME test for attributes on datasets
 
-    def data(self, data: numpy.ndarray):
-        """Set the data of the dataset.
-
-        The expectation is that the dataset will be created as a whole, then set using this method.
-        """
-        # FIXME check shape and datatype are compatible, tests for that.
-        self._data = data
-
     def _dtype(self) -> H5Type:
         if issubclass(self._h5config.dtype, Enum):
             return self._h5config.dtype.dtype()
@@ -140,22 +133,24 @@ class H5Dataset(_H5Base):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
-        dataset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
-                                         dtype=_pytype_to_h5type(self._dtype()),
-                                         data=self._data)
-        return dataset
+        self._dset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
+                                            dtype=_pytype_to_h5type(self._dtype()))
 
     @classmethod
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
         # FIXME Really should be verifying all of the details match the class.
         # FIXME should probably be doing exact=True here, but need to test what happens
-        data = h5file.require_dataset(str(prefix), cls._h5config.shape, _pytype_to_h5type(cls._h5config.dtype))
-        return {"_data": data}
+        dset = h5file.require_dataset(str(prefix), cls._h5config.shape, _pytype_to_h5type(cls._h5config.dtype))
+        return {"_dset": dset}
 
-    def __eq__(self, other):
-        intrinsic = numpy.array_equal(self._data, other._data)
-        children = all([getattr(self, k) == getattr(other, k) for k in self.__fields__])
-        return intrinsic and children
+
+    def __getitem__(self, key):
+        return self._dset.__getitem__(key)
+
+    def __setitem__(self, index, value):
+        return self._dset.__setitem__(index, value)
+
+    # FIXME __len__?
 
 
 class H5Group(_H5Base):
@@ -193,16 +188,19 @@ class H5Group(_H5Base):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Group:
         return h5file.require_group(str(prefix))
 
+    @contextmanager
     def dump(self, filename: Path):
         """Dump the H5Group object tree into a file.
 
         Args:
             filename: Path to dump the the HDF5Group to.
 
-        Returns: None
+        Returns: Self
         """
         with h5py.File(filename, "w") as h5file:
             self._dump(h5file, PurePosixPath("/"))
 
-    def __eq__(self, other):
-        return all([getattr(self, k) == getattr(other, k) for k in self.__fields__])
+            yield self
+
+            # FIXME check that all datasets have been written to.
+            # FIXME write an append() method that does not have this check.
