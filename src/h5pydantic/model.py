@@ -37,7 +37,7 @@ class _H5Base(BaseModel):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
         """Dump the group/dataset container to the h5file."""
 
-    def _dump_children(self, container: _H5Container, h5file: h5py.File, prefix: PurePosixPath):
+    def _dump_children(self, container: _H5Container, h5file: h5py.File, prefix: PurePosixPath) -> list["H5Dataset"]:
         for key, field in self.__fields__.items():
             # FIXME I think I should be explicitly testing these keys against a known list, at init time though.
             # FIXME I really don't like this delegation code.
@@ -57,9 +57,9 @@ class _H5Base(BaseModel):
                 # FIXME set the type explicitly
                 container.attrs.create(key, getattr(self, key)) #  dtype=_pytype_to_h5type(field.type_))
 
-    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> None:
+    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> list["H5DataSet"]:
         container = self._dump_container(h5file, prefix)
-        self._dump_children(container, h5file, prefix)
+        return self._dump_children(container, h5file, prefix)
 
     @classmethod
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
@@ -92,7 +92,7 @@ class _H5Base(BaseModel):
     def _load(cls, h5file: h5py.File, prefix: PurePosixPath) -> Self:
         d = cls._load_intrinsic(h5file, prefix)
         d.update(cls._load_children(h5file, prefix))
-        ret = cls.parse_obj(d)
+        ret = cls(**d)
 
         # FIXME awful hack, _dset isn't being loaded by parse_obj for some reason
         if "_dset" in d:
@@ -112,11 +112,16 @@ class H5Dataset(_H5Base):
     """A pydantic Basemodel specifying a HDF5 Dataset."""
 
     _h5config: H5DatasetConfig = PrivateAttr()
-    _dset: numpy.ndarray = PrivateAttr()
+    _data: numpy.ndarray = PrivateAttr()
+    _dset: h5py.Dataset = PrivateAttr()
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
         cls._h5config = H5DatasetConfig(**kwargs)
+
+    def __init__(self, **kwargs):
+        self._data = kwargs.pop("data_", None)
+        super().__init__()
 
     class Config:
         # Allows numpy.ndarray (which doesn't have a validator).
@@ -124,11 +129,14 @@ class H5Dataset(_H5Base):
 
     # FIXME test for attributes on datasets
 
-    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
+    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath):
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
         self._dset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
-                                            dtype=_pytype_to_h5type(self._h5config.dtype))
+                                            dtype=_pytype_to_h5type(self._h5config.dtype),
+                                            data=self._data)
+
+        return self._dset
 
     @classmethod
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
@@ -137,11 +145,16 @@ class H5Dataset(_H5Base):
         dset = h5file.require_dataset(str(prefix), cls._h5config.shape, _pytype_to_h5type(cls._h5config.dtype))
         return {"_dset": dset}
 
-
     def __getitem__(self, key):
-        return self._dset.__getitem__(key)
+        if self._dset:
+            return self._dset.__getitem__(key)
+        else:
+            return self._data.__getitem__(key)
 
     def __setitem__(self, index, value):
+        if self._data is not None:
+            raise ValueError("Cannot modify dataset values given at initialisation time, use the assignment operator to modify data.")
+
         return self._dset.__setitem__(index, value)
 
     # FIXME __len__?
@@ -171,7 +184,8 @@ class H5Group(_H5Base):
     def close(self):
         """Close the underlying HDF5 file.
         """
-        self._h5file.close()
+        # FIXME WHY CAN"T I DO THIS
+        # self._h5file.close()
 
     def __enter__(self):
         return self
@@ -182,19 +196,44 @@ class H5Group(_H5Base):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Group:
         return h5file.require_group(str(prefix))
 
-    @contextmanager
+
     def dump(self, filename: Path):
         """Dump the H5Group object tree into a file.
 
-        Args:
-            filename: Path to dump the the HDF5Group to.
+        If any Datasets in the tree are not set, will raise an error,
+        and suggest to use dumper().
 
-        Returns: Self
+        Args:
+            filename: Path to dump the HDF5Group object tree to.
+
+        Returns: None
+        """
+        with h5py.File(filename, "w") as h5file:
+            empty_datasets = self._dump(h5file, PurePosixPath("/"))
+
+        if empty_datasets is not None:
+            raise ValueError(f"Some datasets were not written to, use the dumper() context manager to write to them: {empty_datasets}")
+
+
+    @contextmanager
+    def dumper(self, filename: Path):
+        """A context manager to help dump the H5Group object tree into a file.
+
+        Inside the context manager, Datasets can be assigned to, which will write
+        that data to the file.
+
+        At the cleanup stage, this context manager will ensure all Datasets have been written to.
+
+        Args:
+            filename: Path to dump the HDF5Group object tree to.
+
+        Returns: None
         """
         with h5py.File(filename, "w") as h5file:
             self._dump(h5file, PurePosixPath("/"))
 
-            yield self
+            yield
 
-            # FIXME check that all datasets have been written to.
-            # FIXME write an append() method that does not have this check.
+            # FIXME check for still unset datasets here
+
+            self.close()
