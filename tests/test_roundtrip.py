@@ -16,7 +16,7 @@ def varname_st():
     return name_str(string.ascii_letters)
 
 @st.composite
-def type_and_value_st(draw, recursive:bool, stringy:bool = True):
+def type_and_value_st(draw, recursive:bool, stringy:bool=True):
     dtype = draw(st.sampled_from([H5Int32, H5Int64, float] + [str] * stringy + [H5Dataset, H5Group] * recursive))
     return {H5Int32: lambda: (dtype, draw(st.integers(min_value=H5Int32.ge, max_value=H5Int32.le))),
             H5Int64: lambda: (dtype, draw(st.integers(min_value=H5Int64.ge, max_value=H5Int64.le))),
@@ -34,9 +34,8 @@ def dataset_st(draw):
     d = draw(st.dictionaries(min_size=0, keys=varname_st(), values=type_and_value_st(False)))
     array_dtype, _ = draw(type_and_value_st(False, stringy=False))
     dtype = create_model(classname, __base__=H5Dataset, __cls_kwargs__={"shape": shape, "dtype": array_dtype}, **d)
-    dataset = dtype()
     value = draw(hyp_arrays(dtype=_pytype_to_h5type(array_dtype), shape=shape))
-    dataset.data(value)
+    dataset = dtype(data_=value)
     return (dtype, dataset)
 
 @st.composite
