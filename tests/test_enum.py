@@ -34,11 +34,9 @@ def test_enum_works(hdf_path, mode):
 
     exp = Experiment(mode=mode)
 
-    with exp.dump(hdf_path):
-        pass
+    exp.dump(hdf_path)
 
     with Experiment.load(hdf_path) as imported:
-
         assert exp == imported
 
 
@@ -55,11 +53,9 @@ def test_dataset_enum_works(hdf_path):
     class Experiment(H5Group):
         modes = DatasetModes()
 
-    exp = Experiment(modes=DatasetModes())
-
-    with exp.dump(hdf_path):
-        modes_array = np.array([ScanningMode.INSTANTANEOUS, ScanningMode.STEPANDSHOOT, ScanningMode.FLYSCAN])
-        exp.modes[()] = modes_array
+    modes_array = np.array([ScanningMode.INSTANTANEOUS, ScanningMode.STEPANDSHOOT, ScanningMode.FLYSCAN])
+    exp = Experiment(modes=DatasetModes(data_=modes_array))
+    exp.dump(hdf_path)
 
     with Experiment.load(hdf_path) as loaded:
         assert exp == loaded
