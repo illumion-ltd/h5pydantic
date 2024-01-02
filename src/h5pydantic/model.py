@@ -13,7 +13,7 @@ from typing import get_args, get_origin
 from typing import Any, Union
 from typing_extensions import Self, Type
 
-from .enum import H5Enum
+from .enum import _h5enum_dump, _h5enum_load
 from .types import H5Type, _hdfstrtoh5type, _pytype_to_h5type
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
@@ -46,7 +46,7 @@ class _H5Base(BaseModel):
                 for i, elem in enumerate(value):
                     elem._dump(h5file, prefix / key / str(i))
             elif isinstance(value, Enum):
-                H5Enum._dump(h5file, container, key, value.value, field)
+                _h5enum_dump(h5file, container, key, value.value, field)
 
             elif isinstance(value, _H5Base):
                 value._dump(h5file, prefix / key)
@@ -81,7 +81,7 @@ class _H5Base(BaseModel):
                 d[key] = field.type_._load(h5file, prefix / key)
 
             elif issubclass(field.type_, Enum):
-                d[key] = H5Enum._load(h5file, prefix, key, field)
+                d[key] = _h5enum_load(h5file, prefix, key, field)
 
             else:
                 d[key] = h5file[str(prefix)].attrs[key]
@@ -124,17 +124,11 @@ class H5Dataset(_H5Base):
 
     # FIXME test for attributes on datasets
 
-    def _dtype(self) -> H5Type:
-        if issubclass(self._h5config.dtype, Enum):
-            return self._h5config.dtype.dtype()
-        else:
-            return self._h5config.dtype
-
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Dataset:
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
         self._dset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
-                                            dtype=_pytype_to_h5type(self._dtype()))
+                                            dtype=_pytype_to_h5type(self._h5config.dtype))
 
     @classmethod
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
