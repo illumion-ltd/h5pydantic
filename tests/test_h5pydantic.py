@@ -108,13 +108,13 @@ def test_dataset(hdf_path):
         image = AreaDetectorImage()
 
     exp_out = Experiment()
-
-    exp_out.image.data(np.random.randint(256, size=IMAGE_SHAPE))
-
-    exp_out.dump(hdf_path)
+    with exp_out.dumper(hdf_path):
+        image_data = np.random.randint(256, size=IMAGE_SHAPE)
+        exp_out.image[()] = image_data
 
     with Experiment.load(hdf_path) as exp_in:
         assert exp_in == exp_out
+        np.array_equal(exp_in.image[()], image_data)
 
 # TODO test an attribute not defined
 # TODO test setting a value of the wrong type
