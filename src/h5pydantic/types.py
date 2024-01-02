@@ -48,7 +48,7 @@ def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> Unio
         return pytype
 
     elif issubclass(pytype, Enum):
-        return _pytype_to_h5type(pytype.dtype())
+        return _pytype_to_h5type(pytype.__h5dtype__)
 
     else:
         raise ValueError(f"Unknown type: {pytype}")
