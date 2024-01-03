@@ -112,16 +112,15 @@ class H5Dataset(_H5Base):
     """A pydantic Basemodel specifying a HDF5 Dataset."""
 
     _h5config: H5DatasetConfig = PrivateAttr()
-    _data: numpy.ndarray = PrivateAttr()
-    _dset: h5py.Dataset = PrivateAttr()
+    _data: numpy.ndarray = PrivateAttr(default=None)
+    _dset: h5py.Dataset = PrivateAttr(default=None)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
         cls._h5config = H5DatasetConfig(**kwargs)
 
     def __init__(self, **kwargs):
-        self._data = kwargs.pop("data_", None)
-        super().__init__()
+        super().__init__(**kwargs)
 
     class Config:
         # Allows numpy.ndarray (which doesn't have a validator).
@@ -184,8 +183,7 @@ class H5Group(_H5Base):
     def close(self):
         """Close the underlying HDF5 file.
         """
-        # FIXME WHY CAN"T I DO THIS
-        # self._h5file.close()
+        self._h5file.close()
 
     def __enter__(self):
         return self
@@ -230,9 +228,10 @@ class H5Group(_H5Base):
         Returns: None
         """
         with h5py.File(filename, "w") as h5file:
+            self._h5file = h5file
             self._dump(h5file, PurePosixPath("/"))
 
-            yield
+            yield self
 
             # FIXME check for still unset datasets here
 
