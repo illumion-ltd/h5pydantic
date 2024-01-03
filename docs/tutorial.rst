@@ -3,18 +3,18 @@ Tutorial
 
 This tutorial won't really go into all the details one needs to know,
 but it should be able to help people get started. This tutorial
-assumes some fundamental knowledge about Python.
+assumes some fundamental knowledge about Python and HDF5.
 
 A convention to follow is to create your h5pydantic models in a
-"model.py" file.
+``model.py`` file.
 
-The motivational case for h5pydantic was a Synchrotron use case, so
+The motivation for h5pydantic was a Synchrotron use case, so
 this tutorial will use a greatly simplified Synchrotron use case.
 
 Specifying the Model
 --------------------
 
-To get started, import H5Dataset and H5Group from h5pydantic:
+To get started, some imports:
 
 .. literalinclude:: src/model.py
   :end-before: class
@@ -47,7 +47,7 @@ We now have all the bits and pieces to create our entire experiment:
   :pyobject: Experiment
 
 which introduces our first container type, a list of Acquisitions;
-which gets mapped to hdf5 groups indexed by number e.g. /data/0,
+which gets mapped to HDF5 groups indexed by number e.g. /data/0,
 data/1 etc.
 
 Using the Model
@@ -59,10 +59,12 @@ your beamline, for this example we'll just use example values.
 .. literalinclude:: src/dump.py
   :end-before: dump
 
-Note the use of the _data attribute, which we use to set the data of our detector,
-here we're using random arrays.
-
-Now, we're ready to save this experiment to a file, using the Python convention of calling this :ref: dump()
+Now, we're ready to dump this experiment to a file, there's a lot
+going on in this snippet. We begin by creating a :ref: dumper()
+context manager, this will open the output file ``experiment.pdf`` at
+the start of the context block, users can then write to the Datasets using
+the h5py array assignment, at the end of the block h5pydantic will
+close the output file.
 
 .. literalinclude:: src/dump.py
   :start-at: experiment.dump
@@ -72,6 +74,10 @@ as follows (the output of a call to h5dump):
 
 .. literalinclude:: src/experiment.txt
 
-Now, when it comes to analysis, we want to load up the HDF5 file from disk:
+Now, when it comes to analysis, we want to load up the HDF5 file from
+disk. We use a context manager :ref: load() that will open the
+``experiment.hdf`` file, allow users to access all the data, including
+datasets within the context block, and close the file at the end of
+the context block.
 
 .. literalinclude:: src/load.py
