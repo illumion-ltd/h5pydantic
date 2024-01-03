@@ -12,7 +12,7 @@ class Metadata(H5Group):
 
 
 class Acquisition(H5Dataset, shape=(3,5), dtype=H5Int64):
-    beamstop: int
+    beamstop: H5Int64
 
 
 class Experiment(H5Group):
