@@ -134,8 +134,6 @@ class H5Dataset(_H5Base):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath):
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
-        print("dump container", self._data)
-
         self._dset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
                                             dtype=_pytype_to_h5type(self._h5config.dtype),
                                             data=self._data)
