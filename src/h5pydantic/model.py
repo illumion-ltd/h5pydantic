@@ -3,22 +3,23 @@ from pydantic import BaseModel, PrivateAttr, StrictInt
 
 import numpy
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 from enum import Enum
 import types
 
-from typing import get_args, get_origin
+from typing import get_origin
 from typing import Any, Union
 from typing_extensions import Self, Type
 
 from .enum import _h5enum_dump, _h5enum_load
-from .types import H5Type, _hdfstrtoh5type, _pytype_to_h5type
+from .types import H5Type, _pytype_to_h5type
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
 
 # FIXME strings probably need some form of validation, printable seems good, but may be too strict
+
 
 class _H5Base(BaseModel):
     """An implementation detail, to share the _load and _dump APIs."""
@@ -31,7 +32,7 @@ class _H5Base(BaseModel):
                     raise ValueError(f"h5pydantic only handles list containers, not '{get_origin(field.outer_type_)}'")
 
                 if issubclass(field.type_, Enum):
-                    raise ValueError(f"h5pydantic does not handle lists of enums")
+                    raise ValueError("h5pydantic does not handle lists of enums")
 
     @abstractmethod
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
@@ -120,7 +121,9 @@ class H5Dataset(_H5Base):
         cls._h5config = H5DatasetConfig(**kwargs)
 
     def __init__(self, **kwargs):
+        _data = kwargs.pop("data_", None)
         super().__init__(**kwargs)
+        self._data = _data
 
     class Config:
         # Allows numpy.ndarray (which doesn't have a validator).
@@ -131,6 +134,8 @@ class H5Dataset(_H5Base):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath):
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
+        print("dump container", self._data)
+
         self._dset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
                                             dtype=_pytype_to_h5type(self._h5config.dtype),
                                             data=self._data)
@@ -145,12 +150,16 @@ class H5Dataset(_H5Base):
         return {"_dset": dset}
 
     def __getitem__(self, key):
+        """Allows array like access to the underlying h5py Dataset.
+        """
         if self._dset:
             return self._dset.__getitem__(key)
         else:
             return self._data.__getitem__(key)
 
     def __setitem__(self, index, value):
+        """Allows aray like assignment to the underlying h5py Datset.
+        """
         if self._data is not None:
             raise ValueError("Cannot modify dataset values given at initialisation time, use the assignment operator to modify data.")
 
@@ -160,7 +169,7 @@ class H5Dataset(_H5Base):
 
 
 class H5Group(_H5Base):
-    """A pydantic BaseModel specifying a HDF5 Group."""
+    """A pydantic BaseModel specifying a HDF5 Group"""
 
     _h5file: h5py.File = PrivateAttr()
 
@@ -168,11 +177,16 @@ class H5Group(_H5Base):
     def load(cls, filename: Path) -> Self:
         """Load a file into a tree of H5Group models.
 
+        Can be used as context manager, which allows dataset access in
+        the body of the context manager, and will :meth:`close` the
+        ``filename`` at the end of the context block.
+
         Args:
             filename: Path of HDF5 to load.
 
         Returns:
             The parsed H5Group model.
+
         """
         h5file = h5py.File(filename, "r")
         # TODO actually build up the list of unparsed keys
