@@ -7,18 +7,22 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'h5pydantic'
-copyright = '2023, Clinton Roy'
+copyright = '2024, Clinton Roy'
 author = 'Clinton Roy'
-release = '0.1.0'
+release = '0.4.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.napoleon', 'sphinx_autodoc_typehints', 'sphinx.ext.autodoc', 'sphinx_rtd_theme',]
+extensions = ['sphinx.ext.napoleon', 'sphinx.ext.autodoc.typehints', 'sphinx_rtd_theme', 'autoapi.extension']
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'pyconau23/*']
 
+autoapi_dirs = ['../src/']
+autoapi_keep_files = False
+autoapi_python_class_content = 'both'
+autodoc_typehints = 'description'
 
 
 # -- Options for HTML output -------------------------------------------------
