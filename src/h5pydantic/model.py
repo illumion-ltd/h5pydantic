@@ -110,7 +110,8 @@ class H5DatasetConfig(BaseModel):
 
 
 class H5Dataset(_H5Base):
-    """A pydantic Basemodel specifying a HDF5 Dataset."""
+    """A :class:`pydantic.BaseModel` representing a :class:`h5py.Dataset`.
+    """
 
     _h5config: H5DatasetConfig = PrivateAttr()
     _data: numpy.ndarray = PrivateAttr(default=None)
@@ -120,10 +121,15 @@ class H5Dataset(_H5Base):
     def __init_subclass__(cls, **kwargs):
         cls._h5config = H5DatasetConfig(**kwargs)
 
-    def __init__(self, **kwargs):
-        _data = kwargs.pop("data_", None)
+    def __init__(self, data_: numpy.ndarray = None, **kwargs):
+        """
+        Args:
+            data_: allows the value of the DataSet to be initialised to a numpy.Array.
+                   If this keyword is used, the data cannot be subsequently modified
+                   using the array assignment syntax.
+        """
         super().__init__(**kwargs)
-        self._data = _data
+        self._data = data_
 
     class Config:
         # Allows numpy.ndarray (which doesn't have a validator).
@@ -149,6 +155,8 @@ class H5Dataset(_H5Base):
 
     def __getitem__(self, key):
         """Allows array like access to the underlying h5py Dataset.
+
+        :meta public:
         """
         if self._dset:
             return self._dset.__getitem__(key)
@@ -157,6 +165,8 @@ class H5Dataset(_H5Base):
 
     def __setitem__(self, index, value):
         """Allows aray like assignment to the underlying h5py Datset.
+
+        :meta public:
         """
         if self._data is not None:
             raise ValueError("Cannot modify dataset values given at initialisation time, use the assignment operator to modify data.")
@@ -167,7 +177,10 @@ class H5Dataset(_H5Base):
 
 
 class H5Group(_H5Base):
-    """A pydantic BaseModel specifying a HDF5 Group"""
+    """A :class:`pydantic.BaseModel` representing a :class:`h5py.Group`.
+
+    This should be extended to model all your groups.
+    """
 
     _h5file: h5py.File = PrivateAttr()
 
