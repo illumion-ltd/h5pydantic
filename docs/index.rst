@@ -12,7 +12,7 @@ Welcome to h5pydantic's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   tutorial
+   quickstart 
    reference
    roadmap
    Changelog<news>
