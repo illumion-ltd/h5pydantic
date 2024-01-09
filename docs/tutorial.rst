@@ -60,7 +60,7 @@ your beamline, for this example we'll just use example values.
   :end-before: dump
 
 Now, we're ready to dump this experiment to a file, there's a lot
-going on in this snippet. We begin by creating a :ref: dumper()
+going on in this snippet. We begin by creating a :meth:`h5pydantic.H5Group.dumper`
 context manager, this will open the output file ``experiment.pdf`` at
 the start of the context block, users can then write to the Datasets using
 the h5py array assignment, at the end of the block h5pydantic will
@@ -75,7 +75,7 @@ as follows (the output of a call to h5dump):
 .. literalinclude:: src/experiment.txt
 
 Now, when it comes to analysis, we want to load up the HDF5 file from
-disk. We use a context manager :ref: load() that will open the
+disk. We use a context manager :meth:`h5pydantic.H5Group.load` that will open the
 ``experiment.hdf`` file, allow users to access all the data, including
 datasets within the context block, and close the file at the end of
 the context block.
