@@ -1,4 +1,6 @@
-from h5pydantic import H5Dataset, H5Int64
+from h5pydantic import H5Group, H5Dataset, H5Int64
+
+import numpy
 
 import pytest
 
@@ -9,3 +11,27 @@ def test_shape_ints_are_strictly_ints():
             pass
 
 # FIXME check for strict ints in dataset shape tuples, don't accept floats
+
+
+def test_initialised_datasets_are_immutable():
+    class Data(H5Dataset, shape=(2, 2), dtype=H5Int64):
+        pass
+
+    data = Data(data_=numpy.array([[1, 2], [3, 4]]))
+
+    with pytest.raises(ValueError, match="Cannot modify dataset"):
+        data[0, 0] = 3
+
+
+def test_read_from_init_data(hdf_path):
+    class Data(H5Dataset, shape=(2, 2), dtype=H5Int64):
+        pass
+
+    class Experiment(H5Group):
+        data = Data()
+
+    array_data = numpy.array([[1, 2], [3, 4]])
+
+    exp = Experiment(data=Data(data_=array_data))
+
+    numpy.array_equal(exp.data[()], array_data)
