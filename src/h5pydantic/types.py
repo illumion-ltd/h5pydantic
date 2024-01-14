@@ -52,13 +52,3 @@ def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> Unio
 
     else:
         raise ValueError(f"Unknown type: {pytype}")
-
-
-def _hdfstrtoh5type(hdfdtype: str) -> Union[Type[H5Type],Type[float]]:
-    # FIXME this should be a registered look up table or something more automatic
-    if hdfdtype == "int32":
-        return H5Int32
-    elif hdfdtype == "int64":
-        return H5Int64
-    else:
-        raise ValueError(f"Unknown hdf5 data dtype string '{hdfdtype}'")
