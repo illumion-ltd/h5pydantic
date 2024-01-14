@@ -43,7 +43,10 @@ class _H5Base(BaseModel):
             # FIXME I think I should be explicitly testing these keys against a known list, at init time though.
             # FIXME I really don't like this delegation code.
             value = getattr(self, key)
-            if get_origin(field.outer_type_) is list:
+            if field.required is False and value is None:
+                continue
+
+            elif get_origin(field.outer_type_) is list:
                 for i, elem in enumerate(value):
                     elem._dump(h5file, prefix / key / str(i))
             elif isinstance(value, Enum):
@@ -79,13 +82,19 @@ class _H5Base(BaseModel):
                     # FIXME This doesn't check a lot of cases.
                     d[key].insert(i, field.type_._load(h5file, prefix / key / str(i)))
             elif issubclass(field.type_, _H5Base):
-                d[key] = field.type_._load(h5file, prefix / key)
+                if field.required is False and str(prefix / key) not in h5file:
+                    d[key] = None
+                else:
+                    d[key] = field.type_._load(h5file, prefix / key)
 
             elif issubclass(field.type_, Enum):
                 d[key] = _h5enum_load(h5file, prefix, key, field)
 
             else:
-                d[key] = h5file[str(prefix)].attrs[key]
+                if field.required is False and key not in h5file[str(prefix)].attrs:
+                    d[key] = None
+                else:
+                    d[key] = h5file[str(prefix)].attrs[key]
 
         return d
 
