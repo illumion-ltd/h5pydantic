@@ -11,11 +11,13 @@ from typing import Union, Type
 
 class H5Type():
     """All subclasses must be able to save all their possible values to HDF5 without error."""
+
     numpy: Type[numpy.number]
     h5pyid: h5py.h5t.TypeIntegerID
 
 # FIXME add other types, add tests for ge/le for them as well.
 # FIXME add a validator, for ints not to accept float
+
 
 class H5Int64(int, H5Type):
     """Signed Integers, using 64 bits."""
@@ -36,13 +38,12 @@ class H5Int32(int, H5Type):
 
 
 def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> Union[Type[str],Type[float],Type[numpy.dtype],None]:
-    """Maps from the Python type to the h5py type."""
+    """Map from the Python type to the h5py type."""
     if issubclass(pytype, H5Type):
         return pytype.h5pyid
 
     elif pytype is str:
-        # FIXME this lets h5py work out how to store str, which works, but I'm not happy about it.
-        return None
+        return h5py.string_dtype(encoding="utf8", length=None)
 
     elif pytype in [float]:
         return pytype

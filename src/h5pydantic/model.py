@@ -163,17 +163,23 @@ class H5Dataset(_H5Base):
         return {"_dset": dset}
 
     def __getitem__(self, key):
-        """Allows array like access to the underlying h5py Dataset.
+        """Allow array like access to the underlying h5py Dataset.
 
         :meta public:
         """
         if self._dset:
-            return self._dset.__getitem__(key)
+            value = self._dset.__getitem__(key)
+
+            if isinstance(value, bytes) and self._h5config.dtype is str:
+                return value.decode()
+            else:
+                return value
+
         else:
             return self._data.__getitem__(key)
 
     def __setitem__(self, index, value):
-        """Allows aray like assignment to the underlying h5py Datset.
+        """Allow aray like assignment to the underlying h5py Datset.
 
         :meta public:
         """

@@ -35,3 +35,34 @@ def test_read_from_init_data(hdf_path):
     exp = Experiment(data=Data(data_=array_data))
 
     numpy.array_equal(exp.data[()], array_data)
+
+
+def test_scalar_str_dataset_dump(hdf_path):
+    class ScalarData(H5Dataset, shape=(), dtype=str):
+        pass
+
+    class Experiment(H5Group):
+        data = ScalarData()
+
+    exp = Experiment(data=ScalarData(data_="foobarbazbarry"))
+
+    exp.dump(hdf_path)
+
+    with Experiment.load(hdf_path) as loaded:
+        assert loaded.data[()] == "foobarbazbarry"
+
+
+def test_scalar_str_dataset_dumper(hdf_path):
+    class ScalarData(H5Dataset, shape=(), dtype=str):
+        pass
+
+    class Experiment(H5Group):
+        data = ScalarData()
+
+    exp = Experiment()
+
+    with exp.dumper(hdf_path):
+        exp.data[()] = "foobarbaz"
+
+    with Experiment.load(hdf_path) as loaded:
+        assert loaded.data[()] == "foobarbaz"
