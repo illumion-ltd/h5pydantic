@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "h5pydantic"
-version = "0.5.0"
+version = "0.5.1"
 description = "Pydantic models for HDF5 files."
 authors = ["Clinton Roy <clinton.roy@gmail.com>"]
 readme = "README.md"
