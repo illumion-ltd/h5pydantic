@@ -19,7 +19,7 @@ def test_initialised_datasets_are_immutable():
 
     data = Data(data_=numpy.array([[1, 2], [3, 4]]))
 
-    with pytest.raises(ValueError, match="Cannot modify dataset"):
+    with pytest.raises(ValueError, match="Cannot modify data_"):
         data[0, 0] = 3
 
 

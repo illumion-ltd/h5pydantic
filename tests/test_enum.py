@@ -41,7 +41,7 @@ def test_enum_works(hdf_path, mode):
 
 
 def test_list_enum_fails(hdf_path):
-    with pytest.raises(ValueError, match="h5pydantic does not handle lists of enums"):
+    with pytest.raises(TypeError, match="h5pydantic does not handle lists of enums"):
         class Experiment(H5Group):
             modes: list[ScanningMode]
 

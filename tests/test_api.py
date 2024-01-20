@@ -3,7 +3,7 @@ from h5pydantic import H5Group
 import pytest
 
 def test_invalid_container_classes():
-    with pytest.raises(ValueError, match="only handles list containers"):
+    with pytest.raises(TypeError, match="only handles list containers"):
         class DictContainer(H5Group):
             container: dict[str, str] = {}
 
