@@ -14,6 +14,7 @@ from typing import Any, Union
 from typing_extensions import Self, Type
 
 from .enum import _h5enum_dump, _h5enum_load
+from .exceptions import H5PartialDump
 from .types import H5Type, _pytype_to_h5type
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
@@ -29,10 +30,10 @@ class _H5Base(BaseModel):
             if isinstance(field.outer_type_, types.GenericAlias):
 
                 if get_origin(field.outer_type_) != list:
-                    raise ValueError(f"h5pydantic only handles list containers, not '{get_origin(field.outer_type_)}'")
+                    raise TypeError(f"h5pydantic only handles list containers, not '{get_origin(field.outer_type_)}'")
 
                 if issubclass(field.type_, Enum):
-                    raise ValueError("h5pydantic does not handle lists of enums")
+                    raise TypeError("h5pydantic does not handle lists of enums")
 
     @abstractmethod
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
@@ -125,6 +126,7 @@ class H5Dataset(_H5Base):
     _h5config: H5DatasetConfig = PrivateAttr()
     _data: numpy.ndarray = PrivateAttr(default=None)
     _dset: h5py.Dataset = PrivateAttr(default=None)
+    _modified: bool = PrivateAttr(default=False)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -152,7 +154,7 @@ class H5Dataset(_H5Base):
         self._dset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
                                             dtype=_pytype_to_h5type(self._h5config.dtype),
                                             data=self._data)
-
+        self._modified = self._data is not None
         return self._dset
 
     @classmethod
@@ -184,9 +186,9 @@ class H5Dataset(_H5Base):
         :meta public:
         """
         if self._data is not None:
-            raise ValueError("Cannot modify dataset values given at initialisation time, use the assignment operator to modify data.")
-
-        return self._dset.__setitem__(index, value)
+            raise ValueError("Cannot modify data_ values given at __init__().")
+        self._dset.__setitem__(index, value)
+        self._modified = True
 
     # FIXME __len__?
 
@@ -234,36 +236,53 @@ class H5Group(_H5Base):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> h5py.Group:
         return h5file.require_group(str(prefix))
 
+    def _datasets(self, parent: str):
+        for key, field in self.__fields__.items():
+            value = getattr(self, key)
 
-    def dump(self, filename: Path):
+            # FIXME list of datasets
+
+            if isinstance(value, H5Dataset):
+                yield (parent + '.' + key, getattr(self, key))
+            elif isinstance(value, H5Group):
+                yield from getattr(self, key)._datasets(parent + '.' + key)
+
+    def _check_all_modified(self):
+        unset = []
+        for (name, dataset) in self._datasets(self.__class__.__name__):
+            if not dataset._modified:
+                unset.append(name)
+
+        if unset:
+            raise H5PartialDump(unset)
+
+    def dump(self, filename: Path, partial=False):
         """Dump the H5Group object tree into a file.
-
-        If any Datasets in the tree are not set, will raise an error,
-        and suggest to use dumper().
 
         Args:
             filename: Path to dump the HDF5Group object tree to.
+            partial: If False, will raise an error if any H5Dataset is not written to.
 
         Returns: None
         """
         with h5py.File(filename, "w") as h5file:
-            empty_datasets = self._dump(h5file, PurePosixPath("/"))
+            self._dump(h5file, PurePosixPath("/"))
 
-        if empty_datasets is not None:
-            raise ValueError(f"Some datasets were not written to, use the dumper() context manager to write to them: {empty_datasets}")
-
+        if not partial:
+            self._check_all_modified()
 
     @contextmanager
-    def dumper(self, filename: Path):
-        """A context manager to help dump the H5Group object tree into a file.
+    def dumper(self, filename: Path, partial=False):
+        """Context manager to dump the H5Group object tree into a file.
 
         Inside the context manager, Datasets can be assigned to, which will write
         that data to the file.
 
-        At the cleanup stage, this context manager will ensure all Datasets have been written to.
+        At the cleanup stage, if partial is False, this context manager will ensure all Datasets have been written to.
 
         Args:
             filename: Path to dump the HDF5Group object tree to.
+            partial: If False, will raise an error if any H5Dataset is not written to.
 
         Returns: None
         """
@@ -273,6 +292,7 @@ class H5Group(_H5Base):
 
             yield self
 
-            # FIXME check for still unset datasets here
-
             self.close()
+
+        if not partial:
+            self._check_all_modified()
