@@ -2,7 +2,7 @@ from h5pydantic import H5Dataset, H5Group, H5Int64
 
 import numpy as np
 
-from enum import IntEnum
+from enum import Enum
 
 import pytest
 
@@ -20,8 +20,7 @@ import pytest
 # FIXME test that the loaded underlying datatype is the same as that written out
 
 
-class ScanningMode(IntEnum):
-    __h5dtype__ = H5Int64
+class ScanningMode(H5Int64, Enum):
     INSTANTANEOUS = 1
     STEPANDSHOOT = 2
     FLYSCAN = 3
