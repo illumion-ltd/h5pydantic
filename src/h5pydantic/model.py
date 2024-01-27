@@ -10,7 +10,7 @@ from enum import Enum
 import types
 
 from typing import get_origin
-from typing import Any, Union
+from typing import Any, Optional, Union
 from typing_extensions import Self, Type
 
 from .enum import _h5enum_dump, _h5enum_load
@@ -46,7 +46,7 @@ class _H5Base(BaseModel):
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
         """Dump the group/dataset container to the h5file."""
 
-    def _dump_children(self, container: _H5Container, h5file: h5py.File, prefix: PurePosixPath) -> list["H5Dataset"]:
+    def _dump_children(self, container: _H5Container, h5file: h5py.File, prefix: PurePosixPath):
         for key, field in self.__fields__.items():
             # FIXME I think I should be explicitly testing these keys against a known list, at init time though.
             # FIXME I really don't like this delegation code.
@@ -69,12 +69,12 @@ class _H5Base(BaseModel):
                 # FIXME set the type explicitly
                 container.attrs.create(key, getattr(self, key)) #  dtype=_pytype_to_h5type(field.type_))
 
-    def _dump(self, h5file: h5py.File, prefix: PurePosixPath) -> list["H5DataSet"]:
+    def _dump(self, h5file: h5py.File, prefix: PurePosixPath):
         container = self._dump_container(h5file, prefix)
-        return self._dump_children(container, h5file, prefix)
+        self._dump_children(container, h5file, prefix)
 
     @classmethod
-    def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
+    def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict[str, Any]:
         return {}
 
     @classmethod
@@ -110,14 +110,7 @@ class _H5Base(BaseModel):
     def _load(cls, h5file: h5py.File, prefix: PurePosixPath) -> Self:
         d = cls._load_intrinsic(h5file, prefix)
         d.update(cls._load_children(h5file, prefix))
-        ret = cls(**d)
-
-        # FIXME awful hack, _dset isn't being loaded by parse_obj for some reason
-        if "_dset" in d:
-            ret._dset = d["_dset"]
-
-        return ret
-
+        return cls(**d)
 
 class H5DatasetConfig(BaseModel):
     """All of the dataset configuration options."""
@@ -131,15 +124,16 @@ class H5Dataset(_H5Base):
     """
 
     _h5config: H5DatasetConfig = PrivateAttr()
-    _data: numpy.ndarray = PrivateAttr(default=None)
-    _dset: h5py.Dataset = PrivateAttr(default=None)
+    _data: Optional[numpy.ndarray] = PrivateAttr(default=None)
+    _dset: Optional[h5py.Dataset] = PrivateAttr(default=None)
     _modified: bool = PrivateAttr(default=False)
+
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
         cls._h5config = H5DatasetConfig(**kwargs)
 
-    def __init__(self, data_: numpy.ndarray = None, **kwargs):
+    def __init__(self, data_: Optional[numpy.ndarray] = None, **kwargs):
         """
         Args:
             data_: allows the value of the DataSet to be initialised to a numpy.Array.
@@ -148,6 +142,7 @@ class H5Dataset(_H5Base):
         """
         super().__init__(**kwargs)
         self._data = data_
+        self._dset = kwargs.get("_dset", None)
 
     class Config:
         # Allows numpy.ndarray (which doesn't have a validator).
@@ -155,7 +150,7 @@ class H5Dataset(_H5Base):
 
     # FIXME test for attributes on datasets
 
-    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath):
+    def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> Self:
         # FIXME check that the shape of data matches
         # FIXME add in all the other flags
         self._dset = h5file.require_dataset(str(prefix), shape=self._h5config.shape,
