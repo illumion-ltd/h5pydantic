@@ -1,5 +1,5 @@
 import h5py
-from pydantic import BaseModel, PrivateAttr, StrictInt
+from pydantic import BaseModel, PrivateAttr, StrictInt, StrictStr
 
 import numpy
 
@@ -25,8 +25,10 @@ _H5Container = Union[h5py.Group, h5py.Dataset]
 class _H5Base(BaseModel):
     """An implementation detail, to share the _load and _dump APIs."""
 
-    def __init_subclass__(self, **data: Any):
-        for key, field in self.__fields__.items():
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        for key, field in cls.__fields__.items():
             if isinstance(field.outer_type_, types.GenericAlias):
 
                 if get_origin(field.outer_type_) != list:
@@ -34,6 +36,11 @@ class _H5Base(BaseModel):
 
                 if issubclass(field.type_, Enum):
                     raise TypeError("h5pydantic does not handle lists of enums")
+
+            elif field.type_ is str:
+                # FIXME this is an awful way of coercing a type, not sure what the right thing to do is.
+                field.type_ = StrictStr
+                field.populate_validators()
 
     @abstractmethod
     def _dump_container(self, h5file: h5py.File, prefix: PurePosixPath) -> _H5Container:
@@ -200,6 +207,9 @@ class H5Group(_H5Base):
     """
 
     _h5file: h5py.File = PrivateAttr()
+
+    class Config:
+        validate_assignment = True
 
     @classmethod
     def load(cls, filename: Path) -> Self:

@@ -11,7 +11,7 @@ def test_shape_ints_are_strictly_ints():
             pass
 
 # FIXME check for strict ints in dataset shape tuples, don't accept floats
-
+# FIXME check data types in assinment, correct dtype for arrays, strictstr for string
 
 def test_initialised_datasets_are_immutable():
     class Data(H5Dataset, shape=(2, 2), dtype=H5Int64):
