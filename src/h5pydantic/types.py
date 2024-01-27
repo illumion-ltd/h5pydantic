@@ -1,4 +1,4 @@
-from pydantic import StrictInt
+from pydantic import StrictInt, StrictStr
 
 from enum import Enum
 
@@ -42,7 +42,7 @@ def _pytype_to_h5type(pytype: Union[Type[H5Type],Type[str],Type[float]]) -> Unio
     if issubclass(pytype, H5Type):
         return pytype.h5pyid
 
-    elif pytype is str:
+    elif pytype in [str, StrictStr]:
         return h5py.string_dtype(encoding="utf8", length=None)
 
     elif pytype in [float]:
