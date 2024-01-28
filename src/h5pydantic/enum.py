@@ -5,6 +5,7 @@ import h5py.h5t
 
 import pydantic.fields
 
+
 def _h5enum_dump(h5file: h5py.File, container, key: str, value: int, fieldtype: pydantic.fields.ModelField):
     # FIXME look for previous type? maybe cache it in the class?
     h5type = h5py.h5t.enum_create(fieldtype.type_._member_type_.h5pyid)
