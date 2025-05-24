@@ -1,0 +1,28 @@
+HDF5 "experiment.hdf5" {
+GROUP "/" {
+   GROUP "calibration" {
+      DATASET "no_beam" {
+         DATATYPE  H5T_IEEE_F32LE
+         DATASPACE  SIMPLE { ( 0, 0, 0, 0, 1, 0 ) / ( 0, 0, 0, 0, 1, 0 ) }
+         DATA {
+         }
+      }
+      GROUP "position" {
+         ATTRIBUTE "x" {
+            DATATYPE  H5T_STD_I64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 247
+            }
+         }
+         ATTRIBUTE "y" {
+            DATATYPE  H5T_STD_I64LE
+            DATASPACE  SCALAR
+            DATA {
+            (0): 253
+            }
+         }
+      }
+   }
+}
+}
