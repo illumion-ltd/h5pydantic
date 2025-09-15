@@ -1,13 +1,11 @@
 from pydantic import StrictInt, StrictStr
-
 from enum import Enum
-
 import h5py.h5t
-
 import numpy
-
 from typing import Union, Type
 
+
+CHECK_CASTABLE = [h5py.h5t.STRING, h5py.h5t.NATIVE_B8, h5py.h5t.COMPOUND]
 
 class H5Type():
     """All subclasses must be able to save all their possible values to HDF5 without error."""
@@ -81,7 +79,7 @@ class H5String(str, H5Type):
     """String"""
 
     h5pyid = h5py.h5t.STRING
-    numpy = numpy.string_
+    numpy = numpy.object_
 
 
 class H5Bool(int, H5Type):
@@ -103,10 +101,13 @@ class H5Compound(H5Type):
     numpy = numpy.dtypes.VoidDType 
 
 
-def _pytype_to_h5type(pytype: Union[Type[Enum],Type[H5Type],Type[str],Type[float]]) -> Union[Type[Enum],Type[H5Type],Type[str],Type[float]]:
+def _pytype_to_h5type(pytype: Union[Type[Enum],Type[H5Type],Type[str],Type[float]], use_np:bool = True) -> Union[Type[Enum],Type[H5Type],Type[str],Type[float]]:
     """Map from the Python type to the h5py type."""
     if issubclass(pytype, H5Type):
-        return pytype.h5pyid
+        if use_np:
+            return pytype.numpy
+        else:
+            return pytype.h5pyid
 
     elif pytype in [str, StrictStr]:
         return h5py.string_dtype(encoding="utf8", length=None)

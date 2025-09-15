@@ -15,13 +15,19 @@ from typing_extensions import Self, Type
 
 from .enum import _h5enum_dump, _h5enum_load
 from .exceptions import H5PartialDump
-from .types import H5Type, _pytype_to_h5type
+from .types import H5Type, _pytype_to_h5type, CHECK_CASTABLE
 
 _H5Container = Union[h5py.Group, h5py.Dataset]
 
 import logging
 
 logger = logging.getLogger('h5pydantic_logger')
+format = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+logging.basicConfig(format=format,
+                    datefmt='%Y-%m-%d:%H:%M:%S',
+                    filename=Path.home() / '.h5_validation.log',
+                    encoding='utf-8',
+                    level=logging.INFO)
 
 # FIXME strings probably need some form of validation, printable seems good, but may be too strict
 class _H5Base(BaseModel):
@@ -84,7 +90,7 @@ class _H5Base(BaseModel):
         # FIXME specialise away Any
         d: dict[str, Any] = {}
         for key, field in cls.__fields__.items():
-            # logger.info(f"ALIAS: {field.alias}, TYPE: {field.type_}, required: {field.required}, outer type: {field.outer_type_}, origin: {get_origin(field.outer_type_)}")
+            # logger.debug(f"ALIAS: {field.alias}, TYPE: {field.type_}, required: {field.required}, outer type: {field.outer_type_}, origin: {get_origin(field.outer_type_)}")
 
             # Allow h5py to work with unions - only currently checks against data shape
             if get_origin(field.outer_type_) == Union:
@@ -107,7 +113,7 @@ class _H5Base(BaseModel):
                             model_match = False
 
                         if model_match:
-                            logger.info(f"UNION FOUND: {field.alias}, data model {data_model} shape match")
+                            logger.debug(f"UNION FOUND: {field.alias}, data model {data_model} shape match")
                             field.type_ = data_model
                             break
                     
@@ -117,7 +123,7 @@ class _H5Base(BaseModel):
             if get_origin(field.outer_type_) == list:    # isinstance(field.outer_type_, types.GenericAlias):
                 if field.required is False and (str(prefix / field.alias) not in h5file or field.alias not in h5file[str(prefix)].attrs.keys()):
                     d[field.alias] = None
-                    logger.info(f"Optional field {key} not present in this file")
+                    logger.debug(f"Optional field {key} not present in this file")
                 else:
                     if field.alias in h5file[str(prefix)].attrs.keys():
                         # TODO add types that aren't ints
@@ -133,7 +139,7 @@ class _H5Base(BaseModel):
             elif issubclass(field.type_, _H5Base):
                 if field.required is False and str(prefix / field.alias) not in h5file:
                     d[field.alias] = None
-                    logger.info(f"Optional field {key} not present in this file")
+                    logger.debug(f"Optional field {key} not present in this file")
                 else:
                     d[field.alias] = field.type_._load(h5file, prefix / field.alias)
 
@@ -143,7 +149,7 @@ class _H5Base(BaseModel):
             else:
                 if field.required is False and field.alias not in h5file[str(prefix)].attrs:
                     d[field.alias] = None
-                    logger.info(f"Optional attribute {key} from path {prefix} not present in this file")
+                    logger.debug(f"Optional attribute {key} from path {prefix} not present in this file")
                 else:
                     d[field.alias] = h5file[str(prefix)].attrs[field.alias]
 
@@ -206,35 +212,38 @@ class H5Dataset(_H5Base):
     def _load_intrinsic(cls, h5file: h5py.File, prefix: PurePosixPath) -> dict:
         # FIXME Really should be verifying all of the details match the class.
         # FIXME should probably be doing exact=True here, but need to test what happens
-        dset = h5file.require_dataset(str(prefix), cls._h5config.shape, _pytype_to_h5type(cls._h5config.dtype))
-
-        data_type = str(dset.dtype)
         
-        #TODO do we need these cheks now 'require_dataset' is being used?
+        # TODO look for workaround to allow use of 'require_dataset'
+        # unfortunately we can't use 'require_dataset' as the pandas dataframes use compound types which cause an exception
+        # if we could set 'casting' argument to 'unsafe' of np.can_cast() it might be possible
+        # strangely the same numpy casting comparison does not raise an exception below?
+        # dset = h5file.require_dataset(str(prefix), cls._h5config.shape, _pytype_to_h5type(cls._h5config.dtype, True), exact=False)
+
+        dset = h5file[str(prefix)][()]      
+        data_type = str(dset.dtype)
+        model_dtype = cls._h5config.dtype
+
         # Check Dimensions: 
         if len(cls._h5config.shape) != len(dset.shape):
-            raise ValueError(f"{prefix}: Dimensions of model ({len(cls._h5config.shape)}) dont match dimensions of H5 data: {len(dset.shape)}")
+            raise TypeError(f"{prefix}: Dimensions of model ({len(cls._h5config.shape)}) dont match dimensions of H5 data: {len(dset.shape)}")
         
         # Check Shape: 
         for idx, data_dim in enumerate(cls._h5config.shape):
             if data_dim != -1 and data_dim != dset.shape[idx]:
-                raise ValueError(f"{prefix}: Model Shape {cls._h5config.shape} does not match H5 data shape {dset.shape}")
+                raise TypeError(f"{prefix}: Model Shape {cls._h5config.shape} does not match H5 data shape {dset.shape}")
 
         # Check Data Type:
-        if str(data_type) == 'object' and  (cls._h5config.dtype.numpy != numpy.bytes_):
-            # string type imports from h5 as 'object'
-            raise ValueError(f"{prefix}: Model data type {cls._h5config.dtype.numpy} (string) does not match H5 data type {data_type}")
-        elif isinstance(dset.dtype, numpy.dtypes.VoidDType) and  (cls._h5config.dtype.numpy != numpy.bytes_):
-            # Compoud data type imports from h5 as VoidDType
-            raise ValueError(f"Compound types do not match in model and data")
-        elif data_type != 'object' and not isinstance(dset.dtype, numpy.dtypes.VoidDType) and dset.dtype != cls._h5config.dtype.numpy:
-            raise ValueError(f"{prefix}:Model data type {cls._h5config.dtype.numpy} does not match H5 data type {dset.dtype}")
+        if model_dtype.h5pyid in CHECK_CASTABLE:
+            if not numpy.can_cast(dset.dtype, model_dtype.numpy): 
+                raise TypeError(f"{prefix}: Model data type {cls._h5config.dtype.numpy} (string) does not match H5 data type {data_type}")
+        elif not dset.dtype == model_dtype.numpy:
+                raise TypeError(f"{prefix}: Model data type {model_dtype.numpy} does not match HDF5 data type {dset.dtype}")
             
         # Allows model to deal with compound data types
         if isinstance(dset.dtype, numpy.dtypes.VoidDType):
             data_type = str(dset.dtype.__class__.__name__)
 
-        logger.info(f"VALIDATED {cls.__name__}: Data shape [{cls._h5config.shape}={dset.shape}] and data type {cls._h5config.dtype.numpy} match")
+        logger.debug(f"VALIDATED {cls.__name__}: Data shape [{cls._h5config.shape}={dset.shape}] and data type {model_dtype.numpy} match")
         
         return {"_dset": dset}
 
