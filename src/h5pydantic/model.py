@@ -1,5 +1,6 @@
 import h5py
-from pydantic import BaseModel, PrivateAttr, StrictInt, StrictStr
+from pydantic.v1 import BaseModel
+from pydantic import PrivateAttr, StrictInt, StrictStr
 
 import numpy
 
