@@ -17,8 +17,8 @@ classifiers = [
             "License :: OSI Approved :: Python Software Foundation License",
 ]
 [tool.poetry.dependencies]
-python = "^3.9"
-h5py = "^3.10.0"
+python = "^3.13"
+h5py = "3.16.0"
 pydantic = "^2.7.1"
 typing-extensions = "^4.6.3"
 

@@ -81,7 +81,7 @@ class H5String(str, H5Type):
     """String"""
 
     h5pyid = h5py.h5t.STRING
-    numpy = numpy.string_
+    numpy = numpy.bytes_
 
 
 class H5Bool(int, H5Type):
